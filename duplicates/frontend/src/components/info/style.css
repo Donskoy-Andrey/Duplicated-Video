@@ -1,0 +1,7 @@
+.animated-card {
+    transition: box-shadow 0.3s ease; /* Add smooth transition for box-shadow */
+}
+
+.animated-card:hover {
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.3); /* Apply box shadow on hover */
+}

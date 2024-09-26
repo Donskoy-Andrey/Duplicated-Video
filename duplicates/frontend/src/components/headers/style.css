@@ -1,0 +1,6 @@
+.container-fluid > button{
+    align-self: flex-end;
+}
+nav {
+    background-color: transparent;
+}
