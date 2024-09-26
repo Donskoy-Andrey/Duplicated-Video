@@ -1,18 +1,35 @@
-version: "3"
-
 services:
   backend:
+    container_name: backend
     build:
       context: .
       dockerfile: docker/backend/Dockerfile
     ports:
-      - "8000:8000"
-    image: backend:0.0.1
+      - "8001:8001"
+    volumes:
+      - ./duplicates/backend:/app/backend
+      - ./data/:/app/data
+    command: >
+       /bin/sh -c "python -m poetry run uvicorn backend.main:app --host 0.0.0.0 --port 8001 --reload"
 
   frontend:
+    container_name: frontend
     build:
       context: .
       dockerfile: docker/frontend/Dockerfile
     ports:
       - "3000:3000"
-    image: frontend:0.0.1
+    volumes:
+      - ./duplicates/frontend/src:/app/src
+      - ./duplicates/frontend/public:/app/public
+    command: >
+        /bin/sh -c "npm start"
+
+  webserver:
+    container_name: nginx
+    build:
+      context: .
+      dockerfile: docker/webserver/Dockerfile
+    ports:
+      - "80:80"
+
