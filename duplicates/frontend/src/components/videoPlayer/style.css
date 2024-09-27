@@ -51,6 +51,7 @@
 /* Стили для вертикальных видео */
 .video {
     width: 300px;
+    min-height: 500px;
     height: auto;
     display: block;
     object-fit: contain; /* Чтобы избежать искажения видео */
