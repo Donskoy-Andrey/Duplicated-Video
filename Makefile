@@ -24,6 +24,9 @@ test:
 ## Run tests
 tests: test
 
+jupyter:
+	poetry run jupyter lab
+
 ## Clean cache files
 clean:
 	@echo "Cleaning cache files..."
