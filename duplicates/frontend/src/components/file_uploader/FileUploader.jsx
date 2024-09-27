@@ -9,6 +9,7 @@ const FileUploader = (props) => {
     const [errorMessage, setErrorMessage] = useState('');
     const [isUrlValid, setIsUrlValid] = useState(false);
     const [isFileValid, setIsFileValid] = useState(false); // New state for file validity
+    const [isCheckingUrl, setIsCheckingUrl] = useState(false);
     const fileInputRef = useRef(null);
 
     const handleFileChange = (e) => {
@@ -23,24 +24,36 @@ const FileUploader = (props) => {
         }
     };
 
-    const handleLinkChange = (e) => {
+    const handleLinkChange = async (e) => {
         const url = e.target.value;
         setVideoUrl(url);
         setSelectedFile(null);
         setErrorMessage('');
-        console.log(url);
+        setIsFileValid(false);
 
-        if (!validateUrl(url)) {
-            // Deactivate button and clear video preview
+        if (url === '') {
             setIsUrlValid(false);
             if (props.onValidVideoUrl) {
-                props.onValidVideoUrl(null); // Clear video preview in MainPage
+                props.onValidVideoUrl(null);
+            }
+            return;
+        }
+
+        console.log(url);
+
+        setIsCheckingUrl(true);
+        const isValid = await validateUrl(url);
+        setIsCheckingUrl(false);
+
+        if (!isValid) {
+            setIsUrlValid(false);
+            if (props.onValidVideoUrl) {
+                props.onValidVideoUrl(null);
             }
         } else {
-            // Show video preview
             setIsUrlValid(true);
             if (props.onValidVideoUrl) {
-                props.onValidVideoUrl(url); // Update video preview in MainPage
+                props.onValidVideoUrl(url);
             }
         }
     };
@@ -61,28 +74,50 @@ const FileUploader = (props) => {
     };
 
     const validateUrl = (url) => {
-        try {
-            const parsedUrl = new URL(url);
-            const hostname = parsedUrl.hostname.toLowerCase();
+        return new Promise((resolve) => {
+            try {
+                const parsedUrl = new URL(url);
+                const hostname = parsedUrl.hostname.toLowerCase();
 
-            // Check if the domain is s3.ritm.media
-            if (hostname === 's3.ritm.media') {
-                // Check if the URL ends with '.mp4'
-                if (parsedUrl.pathname.endsWith('.mp4')) {
-                    return true;
+                // Проверяем, что домен - s3.ritm.media
+                if (hostname === 's3.ritm.media') {
+                    // Проверяем, что URL оканчивается на '.mp4'
+                    if (parsedUrl.pathname.endsWith('.mp4')) {
+                        // Создаем элемент video
+                        const video = document.createElement('video');
+
+                        // Обработчик успешной загрузки метаданных видео
+                        video.onloadedmetadata = () => {
+                            resolve(true);
+                        };
+
+                        // Обработчик ошибки загрузки видео
+                        video.onerror = () => {
+                            setErrorMessage('Файл не найден по указанному URL.');
+                            resolve(false);
+                        };
+
+                        // Устанавливаем источник видео
+                        video.src = url;
+
+                        video.load();
+
+                    } else {
+                        setErrorMessage('Ссылка должна вести на файл с расширением .mp4.');
+                        resolve(false);
+                    }
                 } else {
-                    setErrorMessage('Ссылка должна вести на файл с расширением .mp4.');
-                    return false;
+                    setErrorMessage('Домен ссылки должен быть s3.ritm.media.');
+                    resolve(false);
                 }
-            } else {
-                setErrorMessage('Домен ссылки должен быть s3.ritm.media.');
-                return false;
+            } catch (e) {
+                setErrorMessage('Введите корректный URL.');
+                resolve(false);
             }
-        } catch (e) {
-            setErrorMessage('Введите корректный URL.');
-            return false;
-        }
+        });
     };
+
+
 
     const handleDragOver = (e) => {
         e.preventDefault();
@@ -145,7 +180,7 @@ const FileUploader = (props) => {
             >
                 <i className="fa-regular fa-file-lines fa-big"></i>
                 <h3>
-                    Перетащите видео файл сюда <br />
+                    Перетащите видео файл сюда <br/>
                     или <div className="text-warning">выберите его вручную</div>
                 </h3>
                 <div className="drag-drop-field__extensions">mp4, wav</div>
@@ -153,7 +188,7 @@ const FileUploader = (props) => {
                     type="file"
                     onInput={handleFileChange}
                     ref={fileInputRef}
-                    style={{ display: 'none' }}
+                    style={{display: 'none'}}
                 />
             </div>
 
@@ -162,19 +197,22 @@ const FileUploader = (props) => {
                     Или вставьте <span className="text-warning">ссылку</span> на видео{' '}
                     <span className="yappy">Yappy</span>
                 </h3>
+                <div className="link-input-field">
                 <input
                     type="text"
                     placeholder="Введите ссылку на видео"
                     value={videoUrl}
                     onChange={handleLinkChange}
                 />
+                    {isCheckingUrl && <span className="loader-text"></span>}
+                </div>
             </div>
 
             <div className="input-control__buttons">
                 <button
                     className="btn btn-primary"
                     onClick={handleUpload}
-                    disabled={props.loading || (!isFileValid && !isUrlValid)}
+                    disabled={props.loading || (!isFileValid && !isUrlValid) || isCheckingUrl}
                 >
                     Отправить
                 </button>
