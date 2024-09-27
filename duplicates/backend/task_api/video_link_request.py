@@ -1,5 +1,5 @@
 from pydantic import BaseModel
 
 
-class VideoLinkRequest(BaseModel):
+class VideoLinkRequestBody(BaseModel):
     link: str

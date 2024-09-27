@@ -5,11 +5,11 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse
 
 from .video_link_response import VideoLinkResponse
-from .video_link_request import VideoLinkRequest
+from .video_link_request import VideoLinkRequestBody
 
 
-def check_video_duplicate(request: VideoLinkRequest):
-    download_video_response = requests.get(request.link)
+def check_video_duplicate(body: VideoLinkRequestBody):
+    download_video_response = requests.get(body.link)
     if not download_video_response.ok or download_video_response.status_code != 200:
         raise HTTPException(status_code=400, detail="Unable to download file by link")
 
@@ -26,5 +26,4 @@ def check_video_duplicate(request: VideoLinkRequest):
     # Шаблон ответа
 
     api_response: VideoLinkResponse = VideoLinkResponse(is_duplicate=False)
-    print("12312312312312312312312312", api_response)
     return JSONResponse(content=api_response.model_dump(), status_code=200)
