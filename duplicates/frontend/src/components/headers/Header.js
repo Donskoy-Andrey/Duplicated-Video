@@ -25,11 +25,6 @@ const Header = ({ currentPage, setCurrentPage }) => {
                             </button>
                         </li>
 
-                        <li className={`nav-item ${currentPage === 'zip' ? 'active' : ''}`}>
-                            <button className="nav-link btn btn-link" onClick={() => setCurrentPage('zip')}>
-                                Загрузка архива
-                            </button>
-                        </li>
                         <li className={`nav-item ${currentPage === 'info' ? 'active' : ''}`}>
                             <button className="nav-link btn btn-link" onClick={() => setCurrentPage('info')}>
                                 Команда

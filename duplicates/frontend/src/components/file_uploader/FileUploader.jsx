@@ -7,18 +7,39 @@ const FileUploader = (props) => {
     const [selectedFile, setSelectedFile] = useState(null);
     const [videoUrl, setVideoUrl] = useState('');
     const [errorMessage, setErrorMessage] = useState('');
+    const [isUrlValid, setIsUrlValid] = useState(false); // New state to track URL validity
     const fileInputRef = useRef(null);
 
     const handleFileChange = (e) => {
         setSelectedFile(e.target.files[0]);
         setVideoUrl('');
         setErrorMessage('');
+        setIsUrlValid(false); // Reset URL validity
+        if (props.onValidVideoUrl) {
+            props.onValidVideoUrl(null); // Clear video preview in MainPage
+        }
     };
 
     const handleLinkChange = (e) => {
-        setVideoUrl(e.target.value);
+        const url = e.target.value;
+        setVideoUrl(url);
         setSelectedFile(null);
         setErrorMessage('');
+        console.log(url);
+
+        if (!validateUrl(url)) {
+            // Deactivate button and clear video preview
+            setIsUrlValid(false);
+            if (props.onValidVideoUrl) {
+                props.onValidVideoUrl(null); // Clear video preview in MainPage
+            }
+        } else {
+            // Show video preview
+            setIsUrlValid(true);
+            if (props.onValidVideoUrl) {
+                props.onValidVideoUrl(url); // Update video preview in MainPage
+            }
+        }
     };
 
     const validateFile = (file) => {
@@ -69,6 +90,10 @@ const FileUploader = (props) => {
         setSelectedFile(file);
         setVideoUrl('');
         setErrorMessage('');
+        setIsUrlValid(false); // Reset URL validity
+        if (props.onValidVideoUrl) {
+            props.onValidVideoUrl(null); // Clear video preview in MainPage
+        }
     };
 
     const handleUpload = () => {
@@ -77,10 +102,7 @@ const FileUploader = (props) => {
                 return;
             }
             props.sendLocalFile(selectedFile);
-        } else if (videoUrl) {
-            if (!validateUrl(videoUrl)) {
-                return;
-            }
+        } else if (videoUrl && isUrlValid) {
             props.sendFileFromWeb(videoUrl);
         } else {
             setErrorMessage('Загрузите файл или введите ссылку');
@@ -133,7 +155,10 @@ const FileUploader = (props) => {
             </div>
 
             <div className="link-input-container">
-                <h3>Или вставьте <span className="text-warning">ссылку</span> на видео <span className="yappy">Yappy</span></h3>
+                <h3>
+                    Или вставьте <span className="text-warning">ссылку</span> на видео{' '}
+                    <span className="yappy">Yappy</span>
+                </h3>
                 <input
                     type="text"
                     placeholder="Введите ссылку на видео"
@@ -143,11 +168,14 @@ const FileUploader = (props) => {
             </div>
 
             <div className="input-control__buttons">
-                <button className="btn btn-primary" onClick={handleUpload} disabled={props.loading}>
+                <button
+                    className="btn btn-primary"
+                    onClick={handleUpload}
+                    disabled={props.loading || (!selectedFile && !isUrlValid)}
+                >
                     Отправить
                 </button>
             </div>
-            {props.loading && <div className="big-center loader"></div>}
             {errorMessage && <p className="error-message">{errorMessage}</p>}
             <div className="uploaded-file__container">
                 {selectedFile && (

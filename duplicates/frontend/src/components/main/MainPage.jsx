@@ -2,18 +2,15 @@ import React from 'react';
 import "./style.css";
 import FileUploader from "../file_uploader/FileUploader";
 import VideoPlayer from "../videoPlayer/VideoPlayer";
-
-const DOC_TYPES_CACHE = {};
+import ResponseInfo from "../responseInfo/ResponseInfo"; // Import the new component
 
 class MainPage extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
-            originalVideoUrl: null,
-            imageURL: null,
+            originalVideoUrl: null, // URL or local object URL of the original video
+            uploadedFile: null,     // Local file object if a file is uploaded
             loading: false,
-            isExampleModalOpen: false,
-            isTypeModalOpen: false,
             responseData: {},
             currentDocType: '', // Assuming this is required
             files: [],
@@ -21,20 +18,7 @@ class MainPage extends React.Component {
     }
 
     componentDidMount() {
-        fetch(`${process.env.REACT_APP_BACKEND}/handle`)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Server error');
-                }
-                return response.json();
-            })
-            .then(data => {
-                // Handle initial data if needed
-                this.setState({});
-            })
-            .catch(error => {
-                this.setState({})
-            });
+        this.setState({});
     }
 
     setFiles = (files) => {
@@ -54,22 +38,36 @@ class MainPage extends React.Component {
 
         console.log("File uploaded: ", file);
 
-        const config = {
-            method: 'POST',
-            body: formData,
-        };
+        // Create a local URL for the uploaded file to display it
+        const fileUrl = URL.createObjectURL(file);
+        this.setState({ originalVideoUrl: fileUrl, uploadedFile: file });
 
+        // Mocking the server response
         try {
             this.setState({ loading: true });
-            const response = await fetch(`${process.env.REACT_APP_BACKEND}/upload`, config);
-            if (response.ok) {
-                const data = await response.json();
-                this.setResponse(data);
-                // Handle the response data as needed
-            } else {
-                console.error('Error uploading file:', response.statusText);
+
+            // Simulate a delay to mimic server processing time
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
+            // Mocked response data without 'message' field
+            const mockResponse = {
+                is_duplicate: Math.random() < 0.5 ? true : false, // Randomly decide if it's a duplicate
+                duplicate_for: "1234567890abcdef", // Mocked duplicate ID
+                link_duplicate: "https://s3.ritm.media/yappy-db-duplicates/4182b2d2-4264-41dd-b101-4c1c66f4bdab.mp4"
+                // 'message' field is removed
+            };
+
+            // If not a duplicate, set duplicate_for and link_duplicate to null
+            if (!mockResponse.is_duplicate) {
+                mockResponse.duplicate_for = null;
+                mockResponse.link_duplicate = null;
             }
-            // Optionally update state or props as needed
+
+            // Set the response data
+            this.setResponse(mockResponse);
+
+            console.log("Mocked server response:", mockResponse);
+
         } catch (error) {
             alert('Сервер недоступен');
         } finally {
@@ -81,29 +79,35 @@ class MainPage extends React.Component {
     sendFileFromWeb = async (videoUrl) => {
         console.log("File uploaded: ", videoUrl);
 
+        // Set the original video URL to display it
+        this.setState({ originalVideoUrl: videoUrl });
 
-        const data = {
-            videoUrl: videoUrl,
-            doctype: this.state.currentDocType,
-        };
-
-        const config = {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data),
-        };
-
+        // Mocking the server response
         try {
             this.setState({ loading: true });
-            const response = await fetch(`${process.env.REACT_APP_BACKEND}/upload-link`, config);
-            if (response.ok) {
-                const responseData = await response.json();
-                this.setResponse(responseData);
-                // Handle the response data as needed
-            } else {
-                console.error('Error uploading link:', response.statusText);
+
+            // Simulate a delay to mimic server processing time
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
+            // Mocked response data without 'message' field
+            const mockResponse = {
+                is_duplicate: Math.random() < 0.5 ? true : false, // Randomly decide if it's a duplicate
+                duplicate_for: "1234567890abcdef", // Mocked duplicate ID
+                link_duplicate: "https://s3.ritm.media/yappy-db-duplicates/4182b2d2-4264-41dd-b101-4c1c66f4bdab.mp4"
+                // 'message' field is removed
+            };
+
+            // If not a duplicate, set duplicate_for and link_duplicate to null
+            if (!mockResponse.is_duplicate) {
+                mockResponse.duplicate_for = null;
+                mockResponse.link_duplicate = null;
             }
-            // Optionally update state or props as needed
+
+            // Set the response data
+            this.setResponse(mockResponse);
+
+            console.log("Mocked server response:", mockResponse);
+
         } catch (error) {
             alert('Сервер недоступен');
         } finally {
@@ -111,12 +115,16 @@ class MainPage extends React.Component {
         }
     }
 
-    handleVideoUrlSubmit = (url) => {
+    handleValidVideoUrl = (url) => {
         this.setState({ originalVideoUrl: url });
-    }
+    };
 
     render() {
         const { loading, originalVideoUrl, responseData } = this.state;
+
+        // Destructure responseData for easier access
+        const { is_duplicate, duplicate_for, link_duplicate } = responseData;
+
         return (
             <div className="main-page">
                 <div className="container mt-4 main-bg">
@@ -138,14 +146,40 @@ class MainPage extends React.Component {
                         setResponse={this.setResponse}
                         responseData={responseData}
                         loading={loading}
+                        onValidVideoUrl={this.handleValidVideoUrl}
                     />
 
+                    <div className="videos-container">
+                    {/* Original Video Player */}
                     {originalVideoUrl &&
-                        <VideoPlayer src={originalVideoUrl}></VideoPlayer>
+                        <div>
+                            <h3>Оригинальное видео:</h3>
+                            <VideoPlayer src={originalVideoUrl}></VideoPlayer>
+                        </div>
                     }
+
                     {loading && (
                         <div className="big-center loader"></div>
                     )}
+                    {/* Video Player for the response link */}
+                    {responseData.link_duplicate &&
+                        <div>
+                            <h3>Видео из ответа сервера:</h3>
+                            <VideoPlayer src={responseData.link_duplicate}></VideoPlayer>
+                        </div>
+                    }
+                    </div>
+
+
+                    {/* Use the new ResponseMessage component */}
+                    {!loading && responseData.hasOwnProperty('is_duplicate') && (
+                        <ResponseInfo
+                            is_duplicate={is_duplicate}
+                            duplicate_for={duplicate_for}
+                            link_duplicate={link_duplicate}
+                        />
+                    )}
+
                 </div>
             </div>
         );
