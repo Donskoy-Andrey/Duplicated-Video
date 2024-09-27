@@ -19,7 +19,6 @@ const VideoPlayer = ({src, poster}) => {
     const [volume, setVolume] = useState(1); // Громкость (от 0 до 1)
     const [isMuted, setIsMuted] = useState(false);
     const [isFullscreen, setIsFullscreen] = useState(false);
-    const [isHorizontal, setIsHorizontal] = useState(true);
     const [isPiPSupported, setIsPiPSupported] = useState(false);
 
 
@@ -71,13 +70,6 @@ const VideoPlayer = ({src, poster}) => {
 
         setDuration(video.duration);
         setCurrentTime(video.currentTime);
-
-        // Определение ориентации видео
-        if (video.videoWidth >= video.videoHeight) {
-            setIsHorizontal(true); // Горизонтальное видео
-        } else {
-            setIsHorizontal(false); // Вертикальное видео
-        }
     };
 
     const togglePictureInPicture = async () => {
@@ -303,7 +295,7 @@ const VideoPlayer = ({src, poster}) => {
 
     return (
         <div
-            className={`video-container ${isHorizontal ? 'horizontal-video' : 'vertical-video'} ${
+            className={`video-container vertical-video'} ${
                 showCentralControls ? 'show-controls' : ''
             }`}
             onClick={handleVideoClick}
@@ -316,7 +308,6 @@ const VideoPlayer = ({src, poster}) => {
             {/* Заголовок */}
             <div className="video-header" onClick={(e) => e.stopPropagation()}>
                 <span>AAA IT для</span>
-                <img src={hackLogo} alt="Hack" className="header-logo"/>
                 <img src={yappyLogo} alt="Yappy" className="header-logo"/>
             </div>
 
@@ -350,69 +341,71 @@ const VideoPlayer = ({src, poster}) => {
             </div>
 
             {/* Панель управления (всегда рендерится) */}
-            <div className="controls" onClick={(e) => e.stopPropagation()}>
+            {/*<div className="controls" onClick={(e) => e.stopPropagation()}>*/}
                 {/* Полоса прогресса */}
-                <div className="progress-container">
-                    <span className="time">{formatTime(currentTime)}</span>
-                    <input
-                        type="range"
-                        min="0"
-                        max="100"
-                        value={progress}
-                        onChange={handleProgressChange}
-                        className="progress-bar"
-                        ref={progressRef}
-                    />
-                    <span className="time">{formatTime(duration)}</span>
-                </div>
+                {/*<div className="progress-container">*/}
+                {/*    <span className="time">{formatTime(currentTime)}</span>*/}
+                {/*    <input*/}
+                {/*        type="range"*/}
+                {/*        min="0"*/}
+                {/*        max="100"*/}
+                {/*        value={progress}*/}
+                {/*        onChange={handleProgressChange}*/}
+                {/*        className="progress-bar"*/}
+                {/*        ref={progressRef}*/}
+                {/*    />*/}
+                {/*    <span className="time">{formatTime(duration)}</span>*/}
+                {/*</div>*/}
 
                 {/* Правая часть элементов управления */}
-                <div className="right-controls">
-                    <button
-                        onClick={toggleMute}
-                        className="control-button"
-                        aria-label={isMuted || volume === 0 ? 'Включить звук' : 'Выключить звук'}
-                    >
-                        {isMuted || volume === 0 ? (
-                            <i className="fa-solid fa-volume-xmark white"></i>
-                        ) : (
-                            <i className="fa-solid fa-volume-high white"></i>
-                        )}
-                    </button>
-                    <input
-                        type="range"
-                        min="0"
-                        max="1"
-                        step="0.01"
-                        value={volume}
-                        onChange={handleVolumeChange}
-                        className="volume-slider"
-                        ref={volumeRef}
-                    />
-                    {isPiPSupported && (
-                        <button
-                            onClick={togglePictureInPicture}
-                            className="control-button"
-                            aria-label="Картинка в картинке"
-                        >
-                            <i className="fa-solid fa-up-right-from-square white"></i>
-                        </button>
-                    )}
-                    <button
-                        onClick={toggleFullscreen}
-                        className="control-button"
-                        aria-label={
-                            isFullscreen ? 'Выйти из полноэкранного режима' : 'Войти в полноэкранный режим'
-                        }
-                    >
-                        {isFullscreen ? (
-                            <i className="fa-solid fa-compress white"></i>
-                        ) : (
-                            <i className="fa-solid fa-expand white"></i>
-                        )}
-                    </button>
-                </div>
-            </div>
+                {/*<div className="right-controls">*/}
+                {/*    <div className="volume-control">*/}
+                {/*    <button*/}
+                {/*        onClick={toggleMute}*/}
+                {/*        className="control-button"*/}
+                {/*        aria-label={isMuted || volume === 0 ? 'Включить звук' : 'Выключить звук'}*/}
+                {/*    >*/}
+                {/*        {isMuted || volume === 0 ? (*/}
+                {/*            <i className="fa-solid fa-volume-xmark white"></i>*/}
+                {/*        ) : (*/}
+                {/*            <i className="fa-solid fa-volume-high white"></i>*/}
+                {/*        )}*/}
+                {/*    </button>*/}
+                {/*    <input*/}
+                {/*        type="range"*/}
+                {/*        min="0"*/}
+                {/*        max="1"*/}
+                {/*        step="0.01"*/}
+                {/*        value={volume}*/}
+                {/*        onChange={handleVolumeChange}*/}
+                {/*        className="volume-slider"*/}
+                {/*        ref={volumeRef}*/}
+                {/*    />*/}
+                {/*    </div>*/}
+                {/*    {isPiPSupported && (*/}
+                {/*        <button*/}
+                {/*            onClick={togglePictureInPicture}*/}
+                {/*            className="control-button"*/}
+                {/*            aria-label="Картинка в картинке"*/}
+                {/*        >*/}
+                {/*            <i className="fa-solid fa-up-right-from-square white"></i>*/}
+                {/*        </button>*/}
+                {/*    )}*/}
+                {/*    <button*/}
+                {/*        onClick={toggleFullscreen}*/}
+                {/*        className="control-button"*/}
+                {/*        aria-label={*/}
+                {/*            isFullscreen ? 'Выйти из полноэкранного режима' : 'Войти в полноэкранный режим'*/}
+                {/*        }*/}
+                {/*    >*/}
+                {/*        {isFullscreen ? (*/}
+                {/*            <i className="fa-solid fa-compress white"></i>*/}
+                {/*        ) : (*/}
+                {/*            <i className="fa-solid fa-expand white"></i>*/}
+                {/*        )}*/}
+                {/*    </button>*/}
+                {/*</div>*/}
+            {/*</div>*/}
         </div>
     );
 }
