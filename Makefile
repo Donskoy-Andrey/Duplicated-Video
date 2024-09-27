@@ -27,6 +27,10 @@ tests: test
 jupyter:
 	poetry run jupyter lab
 
+backend:
+	@echo "$$(tput bold)Starting backend:$$(tput sgr0)"
+	poetry run uvicorn duplicates.backend.main:app --host localhost --reload --port 8000
+
 ## Clean cache files
 clean:
 	@echo "Cleaning cache files..."
