@@ -141,7 +141,6 @@ const FileUploader = (props) => {
 
             <div className="input-control__buttons">
                 <button className="btn btn-primary" onClick={handleUpload}>Отправить</button>
-                <button className="btn btn-success modal-button" onClick={props.openModal}>Примеры запросов</button>
             </div>
             {loading && (
                 <div className="big-center loader"></div>

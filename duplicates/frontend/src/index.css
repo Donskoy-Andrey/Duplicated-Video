@@ -481,4 +481,38 @@ code{
   width: 100%;
 }
 
+.link-input-container{
+  display: flex;
+  align-items: flex-start;
+  flex-direction: column;
+  gap: 10px;
+  border: 2px dashed white;
+  padding: 20px;
+  border-radius: 15px;
+}
+
+.link-input-header{
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+.yappy{
+  color: #66ddb9;
+  font-weight: 700;
+}
+
+.link-input-container > input {
+  width: 100%;
+  outline: none;
+  background-color: transparent;
+  font-size: 1rem;
+  color: rgba(255, 193, 7, 1);
+  border: 1px solid white;
+  padding: 10px;
+  border-radius: 5px;
+}
+
+
 
