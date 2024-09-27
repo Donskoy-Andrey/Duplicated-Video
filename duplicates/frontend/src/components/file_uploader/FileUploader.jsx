@@ -7,14 +7,17 @@ const FileUploader = (props) => {
     const [selectedFile, setSelectedFile] = useState(null);
     const [videoUrl, setVideoUrl] = useState('');
     const [errorMessage, setErrorMessage] = useState('');
-    const [isUrlValid, setIsUrlValid] = useState(false); // New state to track URL validity
+    const [isUrlValid, setIsUrlValid] = useState(false);
+    const [isFileValid, setIsFileValid] = useState(false); // New state for file validity
     const fileInputRef = useRef(null);
 
     const handleFileChange = (e) => {
-        setSelectedFile(e.target.files[0]);
+        const file = e.target.files[0];
+        setSelectedFile(file);
         setVideoUrl('');
         setErrorMessage('');
-        setIsUrlValid(false); // Reset URL validity
+        setIsUrlValid(false);
+        validateFile(file); // Validate the selected file
         if (props.onValidVideoUrl) {
             props.onValidVideoUrl(null); // Clear video preview in MainPage
         }
@@ -44,15 +47,16 @@ const FileUploader = (props) => {
 
     const validateFile = (file) => {
         if (!file) {
-            setErrorMessage('Загрузите файл или введите ссылку');
+            setIsFileValid(false);
             return false;
         }
 
         const extension = file.name.split('.').pop().toLowerCase();
         if (!allowedFormats.includes(extension)) {
-            setErrorMessage('Неверный формат файла');
+            setIsFileValid(false);
             return false;
         }
+        setIsFileValid(true);
         return true;
     };
 
@@ -90,22 +94,20 @@ const FileUploader = (props) => {
         setSelectedFile(file);
         setVideoUrl('');
         setErrorMessage('');
-        setIsUrlValid(false); // Reset URL validity
+        setIsUrlValid(false);
+        validateFile(file); // Validate the dropped file
         if (props.onValidVideoUrl) {
             props.onValidVideoUrl(null); // Clear video preview in MainPage
         }
     };
 
     const handleUpload = () => {
-        if (selectedFile) {
-            if (!validateFile(selectedFile)) {
-                return;
-            }
+        if (selectedFile && isFileValid) {
             props.sendLocalFile(selectedFile);
         } else if (videoUrl && isUrlValid) {
             props.sendFileFromWeb(videoUrl);
         } else {
-            setErrorMessage('Загрузите файл или введите ссылку');
+            setErrorMessage('Загрузите файл или введите корректную ссылку');
         }
     };
 
@@ -121,6 +123,7 @@ const FileUploader = (props) => {
     const deleteFile = () => {
         setSelectedFile(null);
         setErrorMessage('');
+        setIsFileValid(false);
     };
 
     const renderPopover = (title, content) => (
@@ -171,7 +174,7 @@ const FileUploader = (props) => {
                 <button
                     className="btn btn-primary"
                     onClick={handleUpload}
-                    disabled={props.loading || (!selectedFile && !isUrlValid)}
+                    disabled={props.loading || (!isFileValid && !isUrlValid)}
                 >
                     Отправить
                 </button>
@@ -206,6 +209,7 @@ const FileUploader = (props) => {
                         </button>
                     </div>
                 )}
+
             </div>
         </div>
     );

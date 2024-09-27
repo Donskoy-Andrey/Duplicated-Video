@@ -11,6 +11,7 @@ class MainPage extends React.Component {
             originalVideoUrl: null, // URL or local object URL of the original video
             uploadedFile: null,     // Local file object if a file is uploaded
             loading: false,
+            showToast: false,
             responseData: {},
             currentDocType: '', // Assuming this is required
             files: [],
@@ -30,8 +31,14 @@ class MainPage extends React.Component {
         this.setState({ responseData: data })
     }
 
+    setShowToast = (value) => {
+        this.setState({showToast: value});
+    }
+
+
     // Function to handle local file upload
     sendLocalFile = async (file) => {
+        this.setResponse({});
         const formData = new FormData();
         formData.append('file', file);
         formData.append('doctype', this.state.currentDocType);
@@ -65,6 +72,7 @@ class MainPage extends React.Component {
 
             // Set the response data
             this.setResponse(mockResponse);
+            this.setShowToast(true);
 
             console.log("Mocked server response:", mockResponse);
 
@@ -77,6 +85,7 @@ class MainPage extends React.Component {
 
     // Function to handle video URL submission
     sendFileFromWeb = async (videoUrl) => {
+        this.setResponse({});
         console.log("File uploaded: ", videoUrl);
 
         // Set the original video URL to display it
@@ -105,6 +114,7 @@ class MainPage extends React.Component {
 
             // Set the response data
             this.setResponse(mockResponse);
+            this.setShowToast(true);
 
             console.log("Mocked server response:", mockResponse);
 
@@ -120,7 +130,7 @@ class MainPage extends React.Component {
     };
 
     render() {
-        const { loading, originalVideoUrl, responseData } = this.state;
+        const { loading, originalVideoUrl, responseData, showToast } = this.state;
 
         // Destructure responseData for easier access
         const { is_duplicate, duplicate_for, link_duplicate } = responseData;
@@ -172,14 +182,15 @@ class MainPage extends React.Component {
 
 
                     {/* Use the new ResponseMessage component */}
-                    {!loading && responseData.hasOwnProperty('is_duplicate') && (
+                    {!loading && showToast && (
                         <ResponseInfo
+                            showToast={this.state.showToast}
+                            setShowToast={this.setShowToast}
                             is_duplicate={is_duplicate}
                             duplicate_for={duplicate_for}
                             link_duplicate={link_duplicate}
                         />
                     )}
-
                 </div>
             </div>
         );

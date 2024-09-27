@@ -270,7 +270,7 @@ html, body{
 /* HTML: <div class="loader"></div> */
 .loader {
   width: 200px;
-  margin: 50px auto;
+  margin: 50px;
   aspect-ratio: 1;
   border-radius: 50%;
   border: 8px solid #514b82;
@@ -556,6 +556,61 @@ code{
 .response-message p {
   margin: 5px 0;
 }
+
+/* ResponseInfo.css */
+.custom-toast {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  min-width: 300px;
+  position: fixed;
+  top: -200px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #28a745; /* Зеленый по умолчанию */
+  color: #fff;
+  padding: 10px 25px 5px;
+  text-align: center;
+  border-radius: 5px;
+  z-index: 9999;
+  transition: top 0.3s ease;
+  cursor: pointer;
+}
+
+.toast-header{
+  font-size: 16px;
+}
+
+.toast-error {
+  background-color: #dc3545; /* Красный для ошибки */
+}
+
+.toast-success {
+  background-color: #28a745; /* Зеленый для успеха */
+}
+
+.custom-toast.show {
+  top: 20px;
+}
+
+.toast-close-button {
+  position: absolute;
+  top: 0;
+  right: 0;
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.toast-close-button:hover {
+  color: white;
+}
+
+
 
 
 

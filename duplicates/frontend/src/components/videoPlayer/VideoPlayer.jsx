@@ -19,7 +19,6 @@ const VideoPlayer = ({src, poster}) => {
     const [volume, setVolume] = useState(1); // Громкость (от 0 до 1)
     const [isMuted, setIsMuted] = useState(false);
     const [isFullscreen, setIsFullscreen] = useState(false);
-    const [isPiPSupported, setIsPiPSupported] = useState(false);
 
 
     // Обработчик воспроизведения/паузы
@@ -70,21 +69,6 @@ const VideoPlayer = ({src, poster}) => {
 
         setDuration(video.duration);
         setCurrentTime(video.currentTime);
-    };
-
-    const togglePictureInPicture = async () => {
-        const video = videoRef.current;
-        if (!video) return;
-
-        try {
-            if (document.pictureInPictureElement) {
-                await document.exitPictureInPicture();
-            } else {
-                await video.requestPictureInPicture();
-            }
-        } catch (error) {
-            console.error('Ошибка при переключении режима "Картинка в картинке":', error);
-        }
     };
 
 
@@ -143,39 +127,6 @@ const VideoPlayer = ({src, poster}) => {
         }
     };
 
-    // Перемотка видео через полосу прогресса
-    const handleProgressChange = (e) => {
-        const video = videoRef.current;
-        if (!video) return;
-
-        const newProgress = e.target.value;
-        const newTime = (newProgress / 100) * duration;
-        video.currentTime = newTime;
-        setProgress(newProgress);
-
-        // Обновляем CSS-переменную
-        if (progressRef.current) {
-            progressRef.current.style.setProperty('--progress-value', `${newProgress}%`);
-        }
-    };
-
-// Обновление громкости
-    const handleVolumeChange = (e) => {
-        const video = videoRef.current;
-        if (!video) return;
-
-        const newVolume = e.target.value;
-        video.volume = newVolume;
-        setVolume(newVolume);
-        setIsMuted(newVolume === 0);
-
-        // Обновляем CSS-переменную
-        if (volumeRef.current) {
-            const volumeValue = (newVolume - e.target.min) / (e.target.max - e.target.min) * 100;
-            volumeRef.current.style.setProperty('--volume-value', `${volumeValue}%`);
-        }
-    };
-
     // Включение/выключение звука
     const toggleMute = () => {
         const video = videoRef.current;
@@ -200,13 +151,6 @@ const VideoPlayer = ({src, poster}) => {
         }
     };
 
-    // Форматирование времени (например, 00:00)
-    const formatTime = (time) => {
-        if (isNaN(time)) return '00:00';
-        const minutes = Math.floor(time / 60);
-        const seconds = Math.floor(time % 60);
-        return `${minutes < 10 ? '0' + minutes : minutes}:${seconds < 10 ? '0' + seconds : seconds}`;
-    };
 
     // Обработчик клавиатурных сокращений
     useEffect(() => {
@@ -259,9 +203,6 @@ const VideoPlayer = ({src, poster}) => {
             video.removeEventListener('loadedmetadata', handleLoadedMetadata);
         };
     }, [duration]);
-    useEffect(() => {
-        setIsPiPSupported('pictureInPictureEnabled' in document);
-    }, []);
 
     // Обработчики наведения мыши
     const handleMouseEnter = () => {
@@ -313,13 +254,13 @@ const VideoPlayer = ({src, poster}) => {
 
             {/* Центральные кнопки управления (всегда рендерятся) */}
             <div className="central-controls">
-                <button
-                    onClick={rewind10}
-                    className="central-button rewind-button"
-                    aria-label="Перемотать назад на 10 секунд"
-                >
-                    <i className="fa-solid fa-backward"></i>
-                </button>
+                {/*<button*/}
+                {/*    onClick={rewind10}*/}
+                {/*    className="central-button rewind-button"*/}
+                {/*    aria-label="Перемотать назад на 10 секунд"*/}
+                {/*>*/}
+                {/*    <i className="fa-solid fa-backward"></i>*/}
+                {/*</button>*/}
                 <button
                     onClick={togglePlayPause}
                     className="central-button play-pause-button"
@@ -331,13 +272,13 @@ const VideoPlayer = ({src, poster}) => {
                         <i className="fa-solid fa-play"></i>
                     )}
                 </button>
-                <button
-                    onClick={forward10}
-                    className="central-button forward-button"
-                    aria-label="Перемотать вперед на 10 секунд"
-                >
-                    <i className="fa-solid fa-forward"></i>
-                </button>
+                {/*<button*/}
+                {/*    onClick={forward10}*/}
+                {/*    className="central-button forward-button"*/}
+                {/*    aria-label="Перемотать вперед на 10 секунд"*/}
+                {/*>*/}
+                {/*    <i className="fa-solid fa-forward"></i>*/}
+                {/*</button>*/}
             </div>
 
             {/* Панель управления (всегда рендерится) */}
