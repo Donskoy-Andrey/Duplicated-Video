@@ -1,11 +1,8 @@
 import React from 'react';
 import "./style.css";
-import ExampleModal from "../modal/ExampleModal";
-import TypeModal from "../modal/TypeModal";
 import FileUploader from "../file_uploader/FileUploader";
 import {Categories} from "../categories/Categories";
-import Tooltip from "react-bootstrap/Tooltip";
-import OverlayTrigger from "react-bootstrap/OverlayTrigger";
+import VideoLinkInput from "../videoLinkInput/VideoLinkInput";
 
 const DOC_TYPES_CACHE = {};
 
@@ -13,6 +10,7 @@ class MainPage extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
+            originalVideoUrl: null,
             imageURL: null,
             loading: false,
             isExampleModalOpen: false,
@@ -46,75 +44,17 @@ class MainPage extends React.Component {
     }
 
 
-    openExampleModal = () => {
-        // console.log("Modal open");
-        this.setState({isExampleModalOpen: true});
-    }
-
-    closeExampleModal = () => {
-        // console.log("Modal closed");
-        this.setState({isExampleModalOpen: false});
-    }
-    openTypeModal = () => {
-        this.setState({isTypeModalOpen: true});
-    }
-
-
-    closeTypeModal = () => {
-        console.log("Modal closed");
-        this.setState({isTypeModalOpen: false});
-    }
-
     setResponse = (data) => {
         this.setState({responseData: data})
     }
 
-    sendExample = async (name) => {
-        console.log("Sending example");
-        this.setState({isExampleModalOpen: false});
-        console.log('name=', name);
-
-        const requestData = {name: name};
-        this.setState({loading: true});
-        console.log(requestData);
-        try {
-            const response = await fetch(`${process.env.REACT_APP_BACKEND}/handle_example`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json' // Specify content type as JSON
-                },
-                body: JSON.stringify(requestData) // Convert JSON object to string
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to upload file');
-            }
-
-            const data = await response.json();
-            this.setState({responseData: data});
-        } catch (error) {
-            let data = {}
-            if (name === 'first') {
-                data = {}
-            } else {
-                data = {}
-            }
-            this.setState({responseData: data});
-        } finally {
-            this.setState({loading: false});
-        }
-    };
-
-
-    handleDragOver = (event) => {
-        event.preventDefault();
-    };
+    handleVideoUrlSubmit(url) {
+        this.setState({ originalVideoUrl: url });
+        // Здесь вы можете добавить дополнительную логику, например, валидацию ссылки или запрос к серверу
+    }
 
     render() {
         const {loading, isExampleModalOpen, responseData} = this.state;
-        const tooltipMargin = {
-            marginTop: '-10px', // Adjust the margin as needed
-        };
         return (
             <div className="main-page">
 
@@ -130,35 +70,20 @@ class MainPage extends React.Component {
 
                     </div>
 
-                    <FileUploader
-                        openModal={this.openExampleModal}
-                        setFiles={this.setFiles}
-                        currentDocType={this.state.currentDocType}
-                        setResponse={this.setResponse}
-                        responseData={responseData}
-                    />
+                    {/*<FileUploader*/}
+                    {/*    setFiles={this.setFiles}*/}
+                    {/*    currentDocType={this.state.currentDocType}*/}
+                    {/*    setResponse={this.setResponse}*/}
+                    {/*    responseData={responseData}*/}
+                    {/*/>*/}
 
-                    {
-                        Object.keys(responseData).length > 0 && (
-                            <Categories
-                                responseData={responseData}
-                            />
-                        )
-                    }
+                    <VideoLinkInput onVideoUrlSubmit={(url) => this.handleVideoUrlSubmit(url)} />
+
 
                     {loading && (
                         <div className="big-center loader"></div>
                     )}
-                    <div>
-                        <ExampleModal
-                            isOpen={isExampleModalOpen}
-                            onClose={this.closeExampleModal}
-                            onAccept={this.sendExample}
-                        >
-                            <h2>Modal Content</h2>
-                            <p>This is the content of the modal.</p>
-                        </ExampleModal>
-                    </div>
+
                 </div>
             </div>
         );
