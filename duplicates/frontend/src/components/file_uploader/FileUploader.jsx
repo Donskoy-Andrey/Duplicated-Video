@@ -1,41 +1,63 @@
-import React, {useState, useRef} from 'react';
+import React, { useState, useRef } from 'react';
 import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
 import Popover from 'react-bootstrap/Popover';
 
 const FileUploader = (props) => {
-    const allowedFormats = ['pdf', 'docx', 'xlsx', 'txt', 'rtf'];
-    const [selectedFiles, setSelectedFiles] = useState([]);
-    const [loading, setLoading] = useState(false);
+    const allowedFormats = ['mp4', 'wav'];
+    const [selectedFile, setSelectedFile] = useState(null);
+    const [videoUrl, setVideoUrl] = useState('');
+    const [errorMessage, setErrorMessage] = useState('');
     const fileInputRef = useRef(null);
-    const docs_number = 1;
 
     const handleFileChange = (e) => {
-        // console.log('supertest ', selectedFiles === e.target.files);
-        setSelectedFiles([...selectedFiles, ...e.target.files]);
-        // console.log('selected files: ', e.target.files[0]);
+        setSelectedFile(e.target.files[0]);
+        setVideoUrl('');
+        setErrorMessage('');
     };
 
+    const handleLinkChange = (e) => {
+        setVideoUrl(e.target.value);
+        setSelectedFile(null);
+        setErrorMessage('');
+    };
 
-    const checkFiles = (files) => {
-        if (!(files && files.length)) {
-            alert("Загрузите файлы")
+    const validateFile = (file) => {
+        if (!file) {
+            setErrorMessage('Загрузите файл или введите ссылку');
             return false;
         }
 
-        if (files.length !== docs_number) {
-            alert(`неверное количество документов (должно быть ${docs_number})`)
+        const extension = file.name.split('.').pop().toLowerCase();
+        if (!allowedFormats.includes(extension)) {
+            setErrorMessage('Неверный формат файла');
             return false;
-        }
-
-        for (let i = 0; i < files.length; i++) {
-            const extension = files[i].name.split('.').pop().toLowerCase();
-            if (!allowedFormats.includes(extension)) {
-                alert("Неверный формат файла")
-                return false;
-            }
         }
         return true;
-    }
+    };
+
+    const validateUrl = (url) => {
+        try {
+            const parsedUrl = new URL(url);
+            const hostname = parsedUrl.hostname.toLowerCase();
+
+            // Check if the domain is s3.ritm.media
+            if (hostname === 's3.ritm.media') {
+                // Check if the URL ends with '.mp4'
+                if (parsedUrl.pathname.endsWith('.mp4')) {
+                    return true;
+                } else {
+                    setErrorMessage('Ссылка должна вести на файл с расширением .mp4.');
+                    return false;
+                }
+            } else {
+                setErrorMessage('Домен ссылки должен быть s3.ritm.media.');
+                return false;
+            }
+        } catch (e) {
+            setErrorMessage('Введите корректный URL.');
+            return false;
+        }
+    };
 
     const handleDragOver = (e) => {
         e.preventDefault();
@@ -43,62 +65,40 @@ const FileUploader = (props) => {
 
     const handleDrop = (e) => {
         e.preventDefault();
-        const files = [...e.dataTransfer.files];
-        setSelectedFiles([...selectedFiles, ...files]);
+        const file = e.dataTransfer.files[0];
+        setSelectedFile(file);
+        setVideoUrl('');
+        setErrorMessage('');
     };
 
-    const handleUpload = async () => {
-        const formData = new FormData();
-        console.log('currentDocType:', props.currentDocType);
-
-        if (!checkFiles(selectedFiles)) {
-            return;
-        }
-        for (let i = 0; i < selectedFiles.length; i++) {
-            formData.append('files', selectedFiles[i]);
-        }
-        formData.append('doctype', props.currentDocType);
-
-
-        const config = {
-            method: 'POST',
-            body: formData,
-        };
-
-        try {
-            props.setResponse({});
-            setLoading(true);
-            const response = await fetch(`${process.env.REACT_APP_BACKEND}/upload`, config);
-            if (response.ok) {
-                const data = await response.json(); // Await the response.json() promise
-                props.setResponse(data);
-                setSelectedFiles([]);
-            } else {
-                console.error('Error uploading files:', response.statusText, response.error, response.message, response.content);
+    const handleUpload = () => {
+        if (selectedFile) {
+            if (!validateFile(selectedFile)) {
+                return;
             }
-            props.setFiles(selectedFiles);
-            setSelectedFiles([]);
-            fileInputRef.current.value = ''
-        } catch (error) {
-            alert("backend is disabled");
-        } finally {
-            setLoading(false);
+            props.sendLocalFile(selectedFile);
+        } else if (videoUrl) {
+            if (!validateUrl(videoUrl)) {
+                return;
+            }
+            props.sendFileFromWeb(videoUrl);
+        } else {
+            setErrorMessage('Загрузите файл или введите ссылку');
         }
     };
 
     const checkFileFormat = (file) => {
         const extension = file.name.split('.').pop().toLowerCase();
         return allowedFormats.includes(extension);
-    }
+    };
 
     const handleClick = () => {
         fileInputRef.current.click();
     };
 
-    const deleteFile = (index) => {
-        const updatedFiles = [...selectedFiles];
-        updatedFiles.splice(index, 1);
-        setSelectedFiles(updatedFiles);
+    const deleteFile = () => {
+        setSelectedFile(null);
+        setErrorMessage('');
     };
 
     const renderPopover = (title, content) => (
@@ -108,17 +108,9 @@ const FileUploader = (props) => {
         </Popover>
     );
 
-    const popoverContent = `Допустимые форматы: 
-    pdf, 
-    doc, 
-    docx, 
-    xlsx, 
-    txt, 
-    rtf`;
+    const popoverContent = `Допустимые форматы: mp4, wav`;
 
     return (
-
-
         <div>
             <div
                 onClick={handleClick}
@@ -127,42 +119,64 @@ const FileUploader = (props) => {
                 className="drag-drop-field"
             >
                 <i className="fa-regular fa-file-lines fa-big"></i>
-                <h3>Перетащите файл{docs_number > 1 ? `ы (${docs_number} шт.)` : ''} сюда <br/>или <div
-                    className="text-warning">выберите {docs_number > 1 ? `их` : 'его'} вручную</div></h3>
-                <div className="drag-drop-field__extensions">pdf, docx, xlsx, txt, rtf</div>
+                <h3>
+                    Перетащите видео файл сюда <br />
+                    или <div className="text-warning">выберите его вручную</div>
+                </h3>
+                <div className="drag-drop-field__extensions">mp4, wav</div>
                 <input
                     type="file"
-                    multiple
                     onInput={handleFileChange}
                     ref={fileInputRef}
-                    style={{display: 'none'}}
+                    style={{ display: 'none' }}
+                />
+            </div>
+
+            <div className="link-input-container">
+                <h3>Или вставьте <span className="text-warning">ссылку</span> на видео <span className="yappy">Yappy</span></h3>
+                <input
+                    type="text"
+                    placeholder="Введите ссылку на видео"
+                    value={videoUrl}
+                    onChange={handleLinkChange}
                 />
             </div>
 
             <div className="input-control__buttons">
-                <button className="btn btn-primary" onClick={handleUpload}>Отправить</button>
+                <button className="btn btn-primary" onClick={handleUpload} disabled={props.loading}>
+                    Отправить
+                </button>
             </div>
-            {loading && (
-                <div className="big-center loader"></div>
-            )}
+            {props.loading && <div className="big-center loader"></div>}
+            {errorMessage && <p className="error-message">{errorMessage}</p>}
             <div className="uploaded-file__container">
-                {selectedFiles.length > 0 && (
-                    selectedFiles.map((file, i) => (
-                        <div className={`uploaded-file__item ${checkFileFormat(file) ? "" : "wrong"}`} key={i}>
-                            {checkFileFormat(file) ? (
-                                <span className="uploaded-file__filename">{file.name.length > 15 ? `${file.name.substring(0, 5)}...${file.name.substring(file.name.length - 10)}` : file.name}</span>
-                            ) : (
-                                <OverlayTrigger
-                                    trigger={['hover', 'focus']}
-                                    placement="top"
-                                    overlay={renderPopover('Неверный формат', popoverContent)}
-                                >
-                                    <span>{file.name}</span>
-                                </OverlayTrigger>
-                            )}
-                            <button className="btn btn-close-white uploaded-file__button" onClick={() => deleteFile(i)}>x</button>
-                        </div>
-                    ))
+                {selectedFile && (
+                    <div
+                        className={`uploaded-file__item ${
+                            checkFileFormat(selectedFile) ? '' : 'wrong'
+                        }`}
+                    >
+                        {checkFileFormat(selectedFile) ? (
+                            <span className="uploaded-file__filename">
+                {selectedFile.name.length > 15
+                    ? `${selectedFile.name.substring(0, 5)}...${selectedFile.name.substring(
+                        selectedFile.name.length - 10
+                    )}`
+                    : selectedFile.name}
+              </span>
+                        ) : (
+                            <OverlayTrigger
+                                trigger={['hover', 'focus']}
+                                placement="top"
+                                overlay={renderPopover('Неверный формат', popoverContent)}
+                            >
+                                <span>{selectedFile.name}</span>
+                            </OverlayTrigger>
+                        )}
+                        <button className="btn btn-close-white uploaded-file__button" onClick={deleteFile}>
+                            x
+                        </button>
+                    </div>
                 )}
             </div>
         </div>

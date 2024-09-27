@@ -1,8 +1,7 @@
 import React from 'react';
 import "./style.css";
 import FileUploader from "../file_uploader/FileUploader";
-import {Categories} from "../categories/Categories";
-import VideoLinkInput from "../videoLinkInput/VideoLinkInput";
+import VideoPlayer from "../videoPlayer/VideoPlayer";
 
 const DOC_TYPES_CACHE = {};
 
@@ -15,12 +14,14 @@ class MainPage extends React.Component {
             loading: false,
             isExampleModalOpen: false,
             isTypeModalOpen: false,
-            responseData: {}
+            responseData: {},
+            currentDocType: '', // Assuming this is required
+            files: [],
         };
     }
 
     componentDidMount() {
-        fetch(`${process.env.REACT_APP_BACKEND}/"handle"`)
+        fetch(`${process.env.REACT_APP_BACKEND}/handle`)
             .then(response => {
                 if (!response.ok) {
                     throw new Error('Server error');
@@ -28,36 +29,96 @@ class MainPage extends React.Component {
                 return response.json();
             })
             .then(data => {
-                // console.log("init data: ", data);
-                this.setState({}); // Set the fetched data to state
+                // Handle initial data if needed
+                this.setState({});
             })
             .catch(error => {
-                // console.error('Error fetching data:', error);
-                // alert('backend is disabled'); // Display alert for status 500 error
                 this.setState({})
             });
     }
 
-
     setFiles = (files) => {
-        this.setState({files: files});
+        this.setState({ files: files });
+        console.log("Files loaded: ", this.state.files);
     }
-
 
     setResponse = (data) => {
-        this.setState({responseData: data})
+        this.setState({ responseData: data })
     }
 
-    handleVideoUrlSubmit(url) {
+    // Function to handle local file upload
+    sendLocalFile = async (file) => {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('doctype', this.state.currentDocType);
+
+        console.log("File uploaded: ", file);
+
+        const config = {
+            method: 'POST',
+            body: formData,
+        };
+
+        try {
+            this.setState({ loading: true });
+            const response = await fetch(`${process.env.REACT_APP_BACKEND}/upload`, config);
+            if (response.ok) {
+                const data = await response.json();
+                this.setResponse(data);
+                // Handle the response data as needed
+            } else {
+                console.error('Error uploading file:', response.statusText);
+            }
+            // Optionally update state or props as needed
+        } catch (error) {
+            alert('Сервер недоступен');
+        } finally {
+            this.setState({ loading: false });
+        }
+    }
+
+    // Function to handle video URL submission
+    sendFileFromWeb = async (videoUrl) => {
+        console.log("File uploaded: ", videoUrl);
+
+
+        const data = {
+            videoUrl: videoUrl,
+            doctype: this.state.currentDocType,
+        };
+
+        const config = {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data),
+        };
+
+        try {
+            this.setState({ loading: true });
+            const response = await fetch(`${process.env.REACT_APP_BACKEND}/upload-link`, config);
+            if (response.ok) {
+                const responseData = await response.json();
+                this.setResponse(responseData);
+                // Handle the response data as needed
+            } else {
+                console.error('Error uploading link:', response.statusText);
+            }
+            // Optionally update state or props as needed
+        } catch (error) {
+            alert('Сервер недоступен');
+        } finally {
+            this.setState({ loading: false });
+        }
+    }
+
+    handleVideoUrlSubmit = (url) => {
         this.setState({ originalVideoUrl: url });
-        // Здесь вы можете добавить дополнительную логику, например, валидацию ссылки или запрос к серверу
     }
 
     render() {
-        const {loading, isExampleModalOpen, responseData} = this.state;
+        const { loading, originalVideoUrl, responseData } = this.state;
         return (
             <div className="main-page">
-
                 <div className="container mt-4 main-bg">
                     <svg xmlns="http://www.w3.org/2000/svg" className="d-none">
                         <symbol id="exclamation-triangle-fill" viewBox="0 0 16 16">
@@ -66,24 +127,25 @@ class MainPage extends React.Component {
                         </symbol>
                     </svg>
                     <div className="main-header">
-
-
+                        {/* Add header content if needed */}
                     </div>
 
-                    {/*<FileUploader*/}
-                    {/*    setFiles={this.setFiles}*/}
-                    {/*    currentDocType={this.state.currentDocType}*/}
-                    {/*    setResponse={this.setResponse}*/}
-                    {/*    responseData={responseData}*/}
-                    {/*/>*/}
+                    <FileUploader
+                        sendLocalFile={this.sendLocalFile}
+                        sendFileFromWeb={this.sendFileFromWeb}
+                        setFiles={this.setFiles}
+                        currentDocType={this.state.currentDocType}
+                        setResponse={this.setResponse}
+                        responseData={responseData}
+                        loading={loading}
+                    />
 
-                    <VideoLinkInput onVideoUrlSubmit={(url) => this.handleVideoUrlSubmit(url)} />
-
-
+                    {originalVideoUrl &&
+                        <VideoPlayer src={originalVideoUrl}></VideoPlayer>
+                    }
                     {loading && (
                         <div className="big-center loader"></div>
                     )}
-
                 </div>
             </div>
         );

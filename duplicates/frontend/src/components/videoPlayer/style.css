@@ -3,6 +3,7 @@
 .video-container {
     --thumb-size: 0px;
     --thumb-opacity: 0;
+    width: 300px;
     position: relative;
     display: inline-block;
     margin: auto;
@@ -47,23 +48,10 @@
 }
 
 
-/* Стили для горизонтальных видео */
-.horizontal-video .video {
-    width: 100%;
-    height: auto;
-    max-width: 800px;
-    max-height: 600px;
-}
-
 /* Стили для вертикальных видео */
-.vertical-video .video {
-    width: auto;
-    height: 100%;
-    max-width: 600px;
-    max-height: 800px;
-}
-
 .video {
+    width: 300px;
+    height: auto;
     display: block;
     object-fit: contain; /* Чтобы избежать искажения видео */
 }
@@ -88,6 +76,7 @@
     transform: translate(-50%, -50%);
     display: flex;
     align-items: center;
+    justify-content: space-between;
     gap: 20px;
     z-index: 2;
     opacity: 0;
@@ -251,6 +240,7 @@
 /* Правая часть элементов управления */
 .right-controls {
     display: flex;
+    justify-content: space-between;
     align-items: center;
     margin-left: 10px;
 }

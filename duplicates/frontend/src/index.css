@@ -489,6 +489,7 @@ code{
   border: 2px dashed white;
   padding: 20px;
   border-radius: 15px;
+  margin-bottom: 20px;
 }
 
 .link-input-header{
@@ -501,6 +502,11 @@ code{
 .yappy{
   color: #66ddb9;
   font-weight: 700;
+}
+
+.error-message {
+  color: red;
+  margin-top: 10px;
 }
 
 .link-input-container > input {
