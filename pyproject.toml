@@ -32,6 +32,8 @@ faiss-cpu = "^1.8.0.post1"
 jupyter = "^1.1.1"
 torchvision = "^0.19.1"
 python-multipart = "^0.0.10"
+opencv-python = "^4.10.0.84"
+tritonclient = {extras = ["all"], version = "^2.50.0"}
 
 [build-system]
 requires = ["poetry-core"]

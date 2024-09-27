@@ -1,25 +1,22 @@
-import os
-import shutil
 import uuid
-from typing import Optional
 
-from fastapi import FastAPI
+import requests
 from fastapi import FastAPI, File, UploadFile, Form, HTTPException, APIRouter
-from fastapi.responses import JSONResponse
+
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, Field
+
+from duplicates.backend.api.check_video_duplicate import check_video_duplicate
+from duplicates.backend.api.video_link_request import VideoLinkRequest
+from duplicates.backend.api.video_link_response import VideoLinkResponse, VideoLinkResponseFront
 
 app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["localhost", "*"],
     allow_credentials=True,
     allow_methods=["GET", "POST"],
     allow_headers=["*"],
 )
-
-UPLOAD_DIR = "../../data/uploaded_videos"
 
 
 @app.get("/")
@@ -27,65 +24,31 @@ async def root():
     return {"message": "Hello World"}
 
 
-class UploadVideoResponse(BaseModel):
-    is_duplicate: bool = Field(
-        ...,
-        description="Признак дублирования",
-        example=False
-    )
-    duplicate_for: Optional[uuid.UUID] = Field(
-        None,
-        description="Идентификатор видео в формате UUID4",
-        example="0003d59f-89cb-4c5c-9156-6c5bc07c6fad"
-    )
-    message: str = Field(
-        ...,
-        description="Сообщение об успешной загрузке",
-        example="Видео успешно загружено"
-    )
+@app.post("/check-video-duplicate",
+          response_model=VideoLinkResponse,
+          responses={
+              400: {"description": "Неверный запрос"},
+              500: {"description": "Ошибка сервера"}
+          },
+          tags=["API для проверки дубликатов видео"],
+          summary="Проверка видео на дублирование")
+async def task_api(link_request: VideoLinkRequest):
+    return check_video_duplicate(link_request)
 
 
-@app.post(
-    "/upload-video",
-    response_model=UploadVideoResponse,
-    tags=["API для загрузки видео"],
-    summary="Загрузка видеофайла",
-    responses={
-        400: {"description": "Неверный запрос"},
-        500: {"description": "Ошибка сервера"}
-    }
-)
-async def upload_video(videoFile: UploadFile = File(...)):
-    # Проверяем, что файл имеет формат MP4
-    if videoFile.content_type != "video/mp4":
-        raise HTTPException(status_code=400, detail="Допускаются только файлы MP4.")
-
-    # Генерируем уникальный идентификатор для видео
-    video_id = uuid.uuid4()
-    filename = f"{video_id}.mp4"
-    file_path = os.path.join(UPLOAD_DIR, filename)
-    is_duplicate = len(file_path) % 2 == 0
-    print(f'{file_path=}')
-
-    try:
-        # Читаем содержимое файла в байты
-        video_bytes = await videoFile.read()
-        video_size = len(video_bytes)
-        print(f'{video_size=}')
-    except Exception as e:
-        raise HTTPException(status_code=500, detail="Ошибка при чтении файла.") from e
-    finally:
-        videoFile.file.close()
-
-    if is_duplicate:
-        return UploadVideoResponse(
-            is_duplicate=True,
-            duplicate_for=video_id,
-            message = "Видео успешно загружено"
-        )
+@app.post("/front_check-video-duplicate",
+          response_model=VideoLinkResponseFront,
+          responses={
+              400: {"description": "Неверный запрос"},
+              500: {"description": "Ошибка сервера"}
+          },
+          tags=["API для проверки дубликатов видео"],
+          summary="Проверка видео на дублирование")
+async def task_api(link_request: VideoLinkRequest):
+    response = check_video_duplicate(link_request)
+    if response.is_duplicate:
+        url = f"https://s3.ritm.media/yappy-db-duplicates/{response.duplicate_for}.mp4"
+        return VideoLinkResponseFront(is_duplicate=response.is_duplicate, duplicate_for=response.duplicate_for,
+                                      link_duplicate=url)
     else:
-        return UploadVideoResponse(
-            is_duplicate=False,
-            duplicate_for=None,
-            message = "Видео успешно загружено"
-        )
+        return VideoLinkResponseFront(is_duplicate = response.is_duplicate, duplicate_for = response.duplicate_for, link_duplicate = None)
