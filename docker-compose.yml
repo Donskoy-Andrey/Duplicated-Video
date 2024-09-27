@@ -4,8 +4,6 @@ services:
     build:
       context: .
       dockerfile: docker/backend/Dockerfile
-    ports:
-      - "8001:8001"
     volumes:
       - ./duplicates/backend:/app/backend
       - ./data/:/app/data
@@ -17,8 +15,6 @@ services:
     build:
       context: .
       dockerfile: docker/frontend/Dockerfile
-    ports:
-      - "3000:3000"
     volumes:
       - ./duplicates/frontend/src:/app/src
       - ./duplicates/frontend/public:/app/public
@@ -32,4 +28,27 @@ services:
       dockerfile: docker/webserver/Dockerfile
     ports:
       - "80:80"
+
+  triton:
+    container_name: triton
+    build:
+      context: .
+      dockerfile: docker/triton/Dockerfile
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [ gpu ]
+    volumes:
+      - ./duplicates/triton/models:/models
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+    command: >
+        /bin/sh -c "tritonserver --http-port=8002 --metrics-port=8003 --grpc-port=8004 --model-repository=/models"
+    ports:
+      - 8002:8002
+      - 8003:8003
+      - 8004:8004
 
