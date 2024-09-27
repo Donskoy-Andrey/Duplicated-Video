@@ -31,6 +31,7 @@ pytorchvideo = "^0.1.5"
 faiss-cpu = "^1.8.0.post1"
 jupyter = "^1.1.1"
 torchvision = "^0.19.1"
+pydantic = "^2.9.2"
 
 [build-system]
 requires = ["poetry-core"]
