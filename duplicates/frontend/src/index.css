@@ -520,5 +520,43 @@ code{
   border-radius: 5px;
 }
 
+.videos-container{
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  flex-direction: row;
+  gap: 20px;
+}
+
+.response-message {
+  padding: 20px;
+  margin-top: 20px;
+  border-radius: 5px;
+  color: #fff;
+}
+
+.response-success {
+  background-color: #28a745; /* Green background */
+}
+
+.response-error {
+  background-color: #dc3545; /* Red background */
+}
+
+.response-message h4 {
+  margin-top: 10px;
+}
+
+.response-message a {
+  color: #fff;
+  text-decoration: underline;
+}
+
+.response-message p {
+  margin: 5px 0;
+}
+
+
 
 
