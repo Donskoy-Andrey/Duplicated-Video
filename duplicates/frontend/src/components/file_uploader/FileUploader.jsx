@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
 import Popover from 'react-bootstrap/Popover';
+import {ReportButton} from "../reportButton/ReportButton";
 
 const FileUploader = (props) => {
     const allowedFormats = ['mp4', 'wav'];
@@ -216,6 +217,7 @@ const FileUploader = (props) => {
                 >
                     Отправить
                 </button>
+                {props.link_duplicate && <ReportButton />}
             </div>
             {errorMessage && <p className="error-message">{errorMessage}</p>}
             <div className="uploaded-file__container">

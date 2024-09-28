@@ -2,7 +2,7 @@ import React from 'react';
 import FileUploader from "../file_uploader/FileUploader";
 import VideoPlayer from "../videoPlayer/VideoPlayer";
 import ResponseInfo from "../responseInfo/ResponseInfo";
-import ServerErrorToast from "../serverErrorToast/ServerErrorToast"; // Импортируем новый компонент
+import ServerErrorToast from "../serverErrorToast/ServerErrorToast";
 
 class MainPage extends React.Component {
     constructor(props) {
@@ -160,12 +160,13 @@ class MainPage extends React.Component {
                         loading={loading}
                         onValidVideoUrl={this.handleValidVideoUrl}
                         onInValidVideoUrl={this.handleInValidVideoUrl}
+                        link_duplicate={this.state.responseData.link_duplicate}
                     />
 
                     <div className="videos-container">
                         {originalVideoUrl && (
-                            <div>
-                                <h3>Оригинальное видео:</h3>
+                            <div className="video-card">
+                                <h3>Ваше видео:</h3>
                                 <VideoPlayer src={originalVideoUrl} />
                             </div>
                         )}
@@ -175,8 +176,8 @@ class MainPage extends React.Component {
                         )}
 
                         {link_duplicate && (
-                            <div>
-                                <h3>Видео из ответа сервера:</h3>
+                            <div className="video-card">
+                                <h3>Дубликат:</h3>
                                 <VideoPlayer src={link_duplicate} />
                             </div>
                         )}

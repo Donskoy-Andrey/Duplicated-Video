@@ -545,6 +545,7 @@ code{
 }
 
 .videos-container{
+  margin-top: 20px;
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
@@ -552,6 +553,18 @@ code{
   flex-direction: row;
   gap: 20px;
 }
+
+.video-card{
+  border: 3px solid #66ddb9;
+  border-radius: 15px 15px 0 0;
+  padding-top: 20px;
+  object-fit: contain;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
 
 .response-message {
   padding: 20px;
@@ -634,7 +647,23 @@ code{
   color: white;
 }
 
+.report-button{
+  background-color: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  color: rgba(255, 255, 255, 0.4);
+  cursor: pointer;
+  outline: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 9px 16px 9px 12px;
+  border-radius: 12px;
+}
 
+.report-button:hover{
+  background-color: rgba(255, 0, 0, 0.4);
+  color: white;
+}
 
 @keyframes rotate {
   100%   {transform: rotate(360deg)}
