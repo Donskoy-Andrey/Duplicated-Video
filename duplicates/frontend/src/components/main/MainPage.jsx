@@ -63,7 +63,7 @@ class MainPage extends React.Component {
 
             const formData = new FormData();
             formData.append('file', file);
-            formData.append('confidenceLevel', this.state.confidenceLevel);
+            formData.append('confidence_level', this.state.confidenceLevel);
 
             const response = await fetch(`${REACT_APP_BACKEND}/check-video-file-duplicate-front`, {
                 method: 'POST',
@@ -96,7 +96,7 @@ class MainPage extends React.Component {
 
             const payload = {
                 "link": videoUrl,
-                "confidenceLevel": this.state.confidenceLevel
+                "confidence_level": this.state.confidenceLevel
             };
 
             const response = await fetch(`${REACT_APP_BACKEND}/check-video-duplicate-front`, {
@@ -256,7 +256,7 @@ class MainPage extends React.Component {
                     <div className="videos-container">
                         {originalVideoUrl && (
                             <div className="video-card">
-                                <h3>Ваше видео:</h3>
+                                <h3>Загруженное видео:</h3>
                                 <VideoPlayer src={originalVideoUrl} />
                             </div>
                         )}
@@ -267,7 +267,7 @@ class MainPage extends React.Component {
 
                         {link_duplicate && (
                             <div className="video-card">
-                                <h3>Дубликат:</h3>
+                                <h3>Найденное видео:</h3>
                                 <VideoPlayer src={link_duplicate} />
                             </div>
                         )}

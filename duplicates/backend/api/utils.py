@@ -144,25 +144,24 @@ def video_url_to_tensor(url: str) -> list[torch.Tensor, torch.Tensor]:
     """
 
     cap = cv2.VideoCapture(url)
-    print(cap)
-    if not cap.isOpened():
-        raise ValueError(f"Не удалось открыть видео по URL: {url}")
-
     total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-    print(f'{total_frames=}')
-    frames = []
+    frame_indices_long = np.linspace(0, total_frames - 1, 32, dtype=int)
+
+    frames_long, frames_short = [], []
     for i in range(total_frames):
         ret, frame = cap.read()
         if not ret:
             break
 
-        frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        frame_tensor = torch.from_numpy(frame_rgb).permute(2, 0, 1)  # (H, W, C) -> (C, H, W)
-        frames.append(frame_tensor)
+        if i in frame_indices_long:
+            frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            # frame_resized = cv2.resize(frame_rgb, (256, 256), interpolation=cv2.INTER_AREA)
+            frame_tensor = torch.from_numpy(frame_rgb).permute(2, 0, 1)  # (H, W, C) -> (C, H, W)
+            frames_long.append(frame_tensor)
 
     cap.release()
-    print(f"{len(frames)=}")
-    frames = torch.stack(frames).permute(1, 0, 2, 3)
+
+    frames = torch.stack(frames_long).permute(1, 0, 2, 3)
     transform = VideoTransform()
     video_tensor_short, video_tensor_long = transform({"video": frames})["video"]
 
@@ -215,7 +214,7 @@ def send_video_to_triton(video_tensor_short, video_tensor_long, server_url="trit
 def search_in_faiss(
         query_embeddings: torch.Tensor,
         # query_datetimes: np.ndarray,
-        minimum_confidence_level: float = 0.97,
+        minimum_confidence_level: float = 0.95,
         top_k: int = 3,
 ):
     assert query_embeddings.shape[1] == 400  # [batch, 400]
