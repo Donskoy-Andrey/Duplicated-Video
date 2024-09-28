@@ -2,7 +2,7 @@ import torch
 import asyncio
 from fastapi import FastAPI, HTTPException
 
-from .api.base import videoLinkRequest, videoLinkResponse
+from .api.base import videoLinkRequest, videoLinkResponse, videoRequestFront, videoLinkResponseFront
 from .api.utils import video_url_to_tensor, send_video_to_triton, search_in_faiss
 
 
@@ -12,26 +12,29 @@ app = FastAPI(
 )
 
 
-@app.post("/check-video-duplicate-link",
-          response_model=videoLinkResponse,
+@app.post("/check-video-duplicate-front",
+          response_model=videoLinkResponseFront,
           responses={
               400: {"description": "Неверный запрос"},
               500: {"description": "Ошибка сервера"}
           },
-          tags=["API для проверки дубликатов видео"],
+          tags=["API для проверки дубликатов видео на Фронтенд-Сервере"],
           summary="Проверка видео на дублирование")
-async def check_video_duplicate(videoLink: videoLinkRequest):
+async def check_video_duplicate_front(video: videoRequestFront):
     try:
-        video_tensor_short, video_tensor_long = await asyncio.to_thread(video_url_to_tensor, videoLink.link)
+        video_tensor_short, video_tensor_long = await asyncio.to_thread(video_url_to_tensor, video.link)
         query_embeddings = await asyncio.to_thread(send_video_to_triton, video_tensor_short, video_tensor_long)
         query_embeddings = torch.tensor(query_embeddings)
-        potential_duplicate_uuid, has_duplicate = search_in_faiss(query_embeddings=query_embeddings)[0]
+        potential_duplicate_uuid, has_duplicate = search_in_faiss(
+            query_embeddings=query_embeddings, minimum_confidence_level=video.confidence_level,
+        )[0]
 
         if has_duplicate:
-            return videoLinkResponse(
-                is_duplicate=True, duplicate_for=f"https://s3.ritm.media/yappy-db-duplicates/{potential_duplicate_uuid}.mp4",
+            return videoLinkResponseFront(
+                is_duplicate=True,
+                duplicate_for=f"https://s3.ritm.media/yappy-db-duplicates/{potential_duplicate_uuid}.mp4",
             )
-        return videoLinkResponse(
+        return videoLinkResponseFront(
             is_duplicate=False, duplicate_for="",
         )
     except ValueError as e:
