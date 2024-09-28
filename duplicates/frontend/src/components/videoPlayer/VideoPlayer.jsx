@@ -1,355 +1,156 @@
 // src/components/VideoPlayer.js
-import hackLogo from './hack.png';
+import React, { useRef, useState, useEffect, useCallback } from 'react';
 import yappyLogo from './yappy.svg';
-import React, {useRef, useState, useEffect} from 'react';
-import './style.css'; // Измененный путь к стилям
+import './style.css';
 
-const VideoPlayer = ({src, poster}) => {
-    const videoRef = useRef(null);
-    const hideControlsTimeout = useRef(null);
-    const progressRef = useRef(null);
-    const volumeRef = useRef(null);
+const VideoPlayer = ({ src, poster }) => {
+    const videoRef = useRef(null); // Ссылка на элемент видео
+    const hideControlsTimeout = useRef(null); // Таймер для скрытия контролов
 
+    const [isPlaying, setIsPlaying] = useState(false); // Состояние воспроизведения
+    const [showCentralControls, setShowCentralControls] = useState(true); // Отображение центральных контролов
 
-    const [isPlaying, setIsPlaying] = useState(false);
-    const [showCentralControls, setShowCentralControls] = useState(true); // Для отображения центральных кнопок
-    const [progress, setProgress] = useState(0); // Прогресс в процентах
-    const [currentTime, setCurrentTime] = useState(0); // Текущее время в секундах
-    const [duration, setDuration] = useState(0); // Длительность видео в секундах
-    const [volume, setVolume] = useState(1); // Громкость (от 0 до 1)
-    const [isMuted, setIsMuted] = useState(false);
-    const [isFullscreen, setIsFullscreen] = useState(false);
+    // отображения контролов
+    const showControlsTemporarily = useCallback(() => {
+        setShowCentralControls(true);
+        if (hideControlsTimeout.current) {
+            clearTimeout(hideControlsTimeout.current); // Очищаем предыдущий таймер
+        }
+        //  Новый таймер для скрытия контролов через 1.5 секунды
+        hideControlsTimeout.current = setTimeout(() => {
+            setShowCentralControls(false);
+        }, 1500);
+    }, []);
 
-
-    // Обработчик воспроизведения/паузы
-    const togglePlayPause = () => {
+    // Переключение воспроизведения/паузы
+    const togglePlayPause = useCallback(() => {
         const video = videoRef.current;
         if (!video) return;
-
-        if (isPlaying) {
-            video.pause();
+        if (video.paused) {
+            video.play(); // Запускаем воспроизведение
+            setIsPlaying(true);
         } else {
-            video.play();
+            video.pause(); // Ставим на паузу
+            setIsPlaying(false);
         }
-    };
+    }, []);
 
-    // Обработчик клика на видео
+    // Обработчик клика по видео
     const handleVideoClick = () => {
-        togglePlayPause();
-        setShowCentralControls(true);
-
-        // Clear any existing timeout
-        if (hideControlsTimeout.current) {
-            clearTimeout(hideControlsTimeout.current);
-        }
-
-        // Set a new timeout to hide controls after 1.5 seconds
-        hideControlsTimeout.current = setTimeout(() => {
-            setShowCentralControls(false);
-        }, 1500);
+        togglePlayPause(); // Переключаем воспроизведение
+        showControlsTemporarily(); // Временно показываем контролы
     };
-
-    const handleMouseMove = () => {
-        setShowCentralControls(true);
-
-        // Clear any existing timeout
-        if (hideControlsTimeout.current) {
-            clearTimeout(hideControlsTimeout.current);
-        }
-
-        // Set a new timeout to hide controls after 1.5 seconds of inactivity
-        hideControlsTimeout.current = setTimeout(() => {
-            setShowCentralControls(false);
-        }, 1500);
-    };
-
-    const handleLoadedMetadata = () => {
-        const video = videoRef.current;
-        if (!video) return;
-
-        setDuration(video.duration);
-        setCurrentTime(video.currentTime);
-    };
-
 
     // Перемотка назад на 10 секунд
-    const rewind10 = (e) => {
-        e.stopPropagation(); // Предотвращение всплытия события клика
+    const rewind10 = useCallback(() => {
         const video = videoRef.current;
         if (!video) return;
-        video.currentTime = Math.max(video.currentTime - 10, 0);
-        setProgress((video.currentTime / video.duration) * 100);
-        setShowCentralControls(true);
-        setTimeout(() => {
-            setShowCentralControls(false);
-        }, 1500);
-    };
+        video.currentTime = Math.max(video.currentTime - 10, 0); // Перематываем назад
+        showControlsTemporarily(); // Показываем контролы
+    }, [showControlsTemporarily]);
 
     // Перемотка вперед на 10 секунд
-    const forward10 = (e) => {
-        e.stopPropagation(); // Предотвращение всплытия события клика
+    const forward10 = useCallback(() => {
         const video = videoRef.current;
         if (!video) return;
-        video.currentTime = Math.min(video.currentTime + 10, video.duration);
-        setProgress((video.currentTime / video.duration) * 100);
-        setShowCentralControls(true);
-        setTimeout(() => {
-            setShowCentralControls(false);
-        }, 1500);
-    };
-
-    // Обновление состояния при воспроизведении
-    const handlePlay = () => {
-        setIsPlaying(true);
-    };
-
-    // Обновление состояния при паузе
-    const handlePause = () => {
-        setIsPlaying(false);
-    };
-
-    // Обновление прогресса
-    const handleTimeUpdate = () => {
-        const video = videoRef.current;
-        if (!video) return;
-
-        const current = video.currentTime;
-        const total = video.duration;
-
-        setCurrentTime(current);
-        setDuration(total);
-        const progressValue = (current / total) * 100;
-        setProgress(progressValue);
-
-        // Обновляем CSS-переменную
-        if (progressRef.current) {
-            progressRef.current.style.setProperty('--progress-value', `${progressValue}%`);
-        }
-    };
+        video.currentTime = Math.min(video.currentTime + 10, video.duration); // Перематываем вперед
+        showControlsTemporarily(); // Показываем контролы
+    }, [showControlsTemporarily]);
 
     // Включение/выключение звука
-    const toggleMute = () => {
+    const toggleMute = useCallback(() => {
         const video = videoRef.current;
         if (!video) return;
-
-        video.muted = !isMuted;
-        setIsMuted(!isMuted);
-    };
+        video.muted = !video.muted; // Переключаем состояние звука
+    }, []);
 
     // Переключение полноэкранного режима
-    const toggleFullscreen = () => {
+    const toggleFullscreen = useCallback(() => {
         const videoContainer = videoRef.current.parentElement;
-
         if (!document.fullscreenElement) {
-            videoContainer.requestFullscreen().catch(err => {
-                console.error(`Ошибка при попытке включить полноэкранный режим: ${err.message}`);
-            });
-            setIsFullscreen(true);
+            videoContainer.requestFullscreen(); // Входим в полноэкранный режим
         } else {
-            document.exitFullscreen();
-            setIsFullscreen(false);
+            document.exitFullscreen(); // Выходим из полноэкранного режима
         }
-    };
+    }, []);
 
-
-    // Обработчик клавиатурных сокращений
+    // Обработчик нажатия клавиш
     useEffect(() => {
         const handleKeyDown = (e) => {
             switch (e.key) {
                 case ' ':
                     e.preventDefault();
-                    togglePlayPause();
+                    togglePlayPause(); // Пробел - воспроизведение/пауза
                     break;
                 case 'ArrowRight':
-                    forward10(e);
+                    e.preventDefault();
+                    forward10(); // Стрелка вправо - перемотка вперед
                     break;
                 case 'ArrowLeft':
-                    rewind10(e);
-                    break;
-                case 'f':
-                case 'F':
-                    toggleFullscreen();
+                    e.preventDefault();
+                    rewind10(); // Стрелка влево - перемотка назад
                     break;
                 case 'm':
                 case 'M':
-                    toggleMute();
+                    toggleMute(); // 'M' - выключение/включение звука
                     break;
                 default:
                     break;
             }
         };
-
-        window.addEventListener('keydown', handleKeyDown);
-
-        return () => {
-            window.removeEventListener('keydown', handleKeyDown);
-        };
-    }, [isPlaying, isMuted, isFullscreen]); // Зависимости
-
-    // Обработчики событий видео
-    useEffect(() => {
-        const video = videoRef.current;
-        if (!video) return;
-
-        video.addEventListener('play', handlePlay);
-        video.addEventListener('pause', handlePause);
-        video.addEventListener('timeupdate', handleTimeUpdate);
-        video.addEventListener('loadedmetadata', handleLoadedMetadata);
+        window.addEventListener('keydown', handleKeyDown); // Добавляем обработчик события
 
         return () => {
-            video.removeEventListener('play', handlePlay);
-            video.removeEventListener('pause', handlePause);
-            video.removeEventListener('timeupdate', handleTimeUpdate);
-            video.removeEventListener('loadedmetadata', handleLoadedMetadata);
+            window.removeEventListener('keydown', handleKeyDown); // Очищаем обработчик при размонтировании
         };
-    }, [duration]);
+    }, [togglePlayPause, forward10, rewind10, toggleFullscreen, toggleMute]); // Зависимости эффекта
 
-    // Обработчики наведения мыши
+    // Обработчики событий мыши
     const handleMouseEnter = () => {
-        setShowCentralControls(true);
-
-        // Clear any existing timeout
-        if (hideControlsTimeout.current) {
-            clearTimeout(hideControlsTimeout.current);
-        }
+        showControlsTemporarily(); // Показываем контролы при наведении
     };
 
     const handleMouseLeave = () => {
-        // Clear any existing timeout
         if (hideControlsTimeout.current) {
-            clearTimeout(hideControlsTimeout.current);
+            clearTimeout(hideControlsTimeout.current); // Очищаем таймер
         }
-
-        // Hide the controls immediately or after a delay
-        setShowCentralControls(false);
+        setShowCentralControls(false); // Скрываем контролы
     };
-
-    useEffect(() => {
-        if (progressRef.current) {
-            progressRef.current.style.setProperty('--progress-value', `${progress}%`);
-        }
-        if (volumeRef.current) {
-            const volumeValue = (volume - volumeRef.current.min) / (volumeRef.current.max - volumeRef.current.min) * 100;
-            volumeRef.current.style.setProperty('--volume-value', `${volumeValue}%`);
-        }
-    }, []);
 
     return (
         <div
-            className={`video-container vertical-video'} ${
+            className={`video-container vertical-video ${
                 showCentralControls ? 'show-controls' : ''
             }`}
-            onClick={handleVideoClick}
-            onMouseEnter={handleMouseEnter}
-            onMouseLeave={handleMouseLeave}
-            onMouseMove={handleMouseMove}
+            onClick={handleVideoClick} // Обработчик клика по контейнеру
+            onMouseEnter={handleMouseEnter} // Обработчик наведения мыши
+            onMouseLeave={handleMouseLeave} // Обработчик ухода мыши
+            onMouseMove={showControlsTemporarily} // Обработчик движения мыши
         >
-            <video ref={videoRef} src={src} poster={poster} className="video"/>
+            <video ref={videoRef} src={src} poster={poster} className="video" /> {/* Элемент видео */}
 
-            {/* Заголовок */}
+            {/* Заголовок видео */}
             <div className="video-header" onClick={(e) => e.stopPropagation()}>
                 <span>AAA IT для</span>
-                <img src={yappyLogo} alt="Yappy" className="header-logo"/>
+                <img src={yappyLogo} alt="Yappy" className="header-logo" /> {/* Логотип */}
             </div>
 
-            {/* Центральные кнопки управления (всегда рендерятся) */}
+            {/* Центральные контролы */}
             <div className="central-controls">
-                {/*<button*/}
-                {/*    onClick={rewind10}*/}
-                {/*    className="central-button rewind-button"*/}
-                {/*    aria-label="Перемотать назад на 10 секунд"*/}
-                {/*>*/}
-                {/*    <i className="fa-solid fa-backward"></i>*/}
-                {/*</button>*/}
                 <button
                     onClick={togglePlayPause}
                     className="central-button play-pause-button"
                     aria-label={isPlaying ? 'Пауза' : 'Воспроизведение'}
                 >
                     {isPlaying ? (
-                        <i className="fa-solid fa-pause"></i>
+                        <i className="fa-solid fa-pause"></i> // Иконка паузы
                     ) : (
-                        <i className="fa-solid fa-play"></i>
+                        <i className="fa-solid fa-play"></i> // Иконка воспроизведения
                     )}
                 </button>
-                {/*<button*/}
-                {/*    onClick={forward10}*/}
-                {/*    className="central-button forward-button"*/}
-                {/*    aria-label="Перемотать вперед на 10 секунд"*/}
-                {/*>*/}
-                {/*    <i className="fa-solid fa-forward"></i>*/}
-                {/*</button>*/}
             </div>
-
-            {/* Панель управления (всегда рендерится) */}
-            {/*<div className="controls" onClick={(e) => e.stopPropagation()}>*/}
-                {/* Полоса прогресса */}
-                {/*<div className="progress-container">*/}
-                {/*    <span className="time">{formatTime(currentTime)}</span>*/}
-                {/*    <input*/}
-                {/*        type="range"*/}
-                {/*        min="0"*/}
-                {/*        max="100"*/}
-                {/*        value={progress}*/}
-                {/*        onChange={handleProgressChange}*/}
-                {/*        className="progress-bar"*/}
-                {/*        ref={progressRef}*/}
-                {/*    />*/}
-                {/*    <span className="time">{formatTime(duration)}</span>*/}
-                {/*</div>*/}
-
-                {/* Правая часть элементов управления */}
-                {/*<div className="right-controls">*/}
-                {/*    <div className="volume-control">*/}
-                {/*    <button*/}
-                {/*        onClick={toggleMute}*/}
-                {/*        className="control-button"*/}
-                {/*        aria-label={isMuted || volume === 0 ? 'Включить звук' : 'Выключить звук'}*/}
-                {/*    >*/}
-                {/*        {isMuted || volume === 0 ? (*/}
-                {/*            <i className="fa-solid fa-volume-xmark white"></i>*/}
-                {/*        ) : (*/}
-                {/*            <i className="fa-solid fa-volume-high white"></i>*/}
-                {/*        )}*/}
-                {/*    </button>*/}
-                {/*    <input*/}
-                {/*        type="range"*/}
-                {/*        min="0"*/}
-                {/*        max="1"*/}
-                {/*        step="0.01"*/}
-                {/*        value={volume}*/}
-                {/*        onChange={handleVolumeChange}*/}
-                {/*        className="volume-slider"*/}
-                {/*        ref={volumeRef}*/}
-                {/*    />*/}
-                {/*    </div>*/}
-                {/*    {isPiPSupported && (*/}
-                {/*        <button*/}
-                {/*            onClick={togglePictureInPicture}*/}
-                {/*            className="control-button"*/}
-                {/*            aria-label="Картинка в картинке"*/}
-                {/*        >*/}
-                {/*            <i className="fa-solid fa-up-right-from-square white"></i>*/}
-                {/*        </button>*/}
-                {/*    )}*/}
-                {/*    <button*/}
-                {/*        onClick={toggleFullscreen}*/}
-                {/*        className="control-button"*/}
-                {/*        aria-label={*/}
-                {/*            isFullscreen ? 'Выйти из полноэкранного режима' : 'Войти в полноэкранный режим'*/}
-                {/*        }*/}
-                {/*    >*/}
-                {/*        {isFullscreen ? (*/}
-                {/*            <i className="fa-solid fa-compress white"></i>*/}
-                {/*        ) : (*/}
-                {/*            <i className="fa-solid fa-expand white"></i>*/}
-                {/*        )}*/}
-                {/*    </button>*/}
-                {/*</div>*/}
-            {/*</div>*/}
         </div>
     );
-}
-
+};
 
 export default VideoPlayer;
