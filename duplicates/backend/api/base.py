@@ -34,7 +34,7 @@ class videoLinkResponseFront(BaseModel):
         description="признак дублирования",
         examples=[False]
     )
-    duplicate_for: str = Field(
+    link_duplicate: str = Field(
         ...,
         description="ссылки на видео",
         examples=[
