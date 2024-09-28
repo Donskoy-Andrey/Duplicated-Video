@@ -1,0 +1,19 @@
+version: 1
+disable_existing_loggers: no
+formatters:
+  console:
+    (): web.logger.ConsoleFormatter
+handlers:
+  console:
+    class: logging.StreamHandler
+    formatter: console
+root:
+  level: INFO
+  handlers: [console]
+loggers:
+  'uvicorn':
+    level: INFO
+    propagate: yes
+  'timofey':
+      level: INFO
+      propagate: yes

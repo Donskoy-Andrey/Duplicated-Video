@@ -1,5 +1,5 @@
 import cv2
-import tritonclient.grpc as grpcclient
+import tritonclient.http as httpclient
 import numpy as np
 
 from fastapi import FastAPI
@@ -181,7 +181,7 @@ def video_url_to_tensor(url: str) -> list[torch.Tensor, torch.Tensor]:
 
 
 def send_video_to_triton(video_tensor_short, video_tensor_long, server_url="triton:8004"):
-    triton_client = grpcclient.InferenceServerClient(url=server_url)
+    triton_client = httpclient.InferenceServerClient(url=server_url)
 
     if video_tensor_long.dim() != 5:
         video_tensor_long = video_tensor_long.unsqueeze(0)
@@ -191,10 +191,10 @@ def send_video_to_triton(video_tensor_short, video_tensor_long, server_url="trit
         video_tensor_short = video_tensor_short.unsqueeze(0)
     video_tensor_short_np = video_tensor_short.cpu().numpy().astype(np.float32)
 
-    input_tensor_short = grpcclient.InferInput('input__0', video_tensor_short.shape, "FP32")
+    input_tensor_short = httpclient.InferInput('input__0', video_tensor_short.shape, "FP32")
     input_tensor_short.set_data_from_numpy(video_tensor_short_np)
 
-    input_tensor_long = grpcclient.InferInput('input__1', video_tensor_long.shape, "FP32")
+    input_tensor_long = httpclient.InferInput('input__1', video_tensor_long.shape, "FP32")
     input_tensor_long.set_data_from_numpy(video_tensor_long_np)
 
     inputs = [
@@ -203,7 +203,7 @@ def send_video_to_triton(video_tensor_short, video_tensor_long, server_url="trit
     ]
 
     outputs = [
-        grpcclient.InferRequestedOutput('output__0')
+        httpclient.InferRequestedOutput('output__0')
     ]
 
     response = triton_client.infer(
