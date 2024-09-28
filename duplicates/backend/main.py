@@ -19,6 +19,8 @@ from .task_api import check_video_duplicate, VideoLinkRequestBody, VideoLinkResp
 import requests
 from io import BytesIO
 from pytorchvideo.data.encoded_video import select_video_class
+import pandas as pd
+import faiss
 
 
 app = FastAPI()
@@ -217,11 +219,73 @@ def send_video_to_triton(video_tensor_short, video_tensor_long, server_url="trit
     return embeddings
 
 
+def search_in_faiss(
+    query_embeddings: torch.Tensor,
+    # query_datetimes: np.ndarray,
+    minimum_confidence_level: float = 0.97,
+    top_k: int = 3,
+):
+    assert query_embeddings.shape[1] == 400  # [batch, 400]
+
+    uuid_path = './embeddings_uuid.csv'
+    embeddings_uuid = pd.read_csv(uuid_path)
+    # embeddings_datetimes = embeddings_uuid["created"].to_numpy().astype(np.datetime64)
+    embeddings_uuid = embeddings_uuid["uuid"].to_numpy()
+
+    id_to_uuid = embeddings_uuid
+    # id_to_datetime = embeddings_datetimes
+    uuid_to_id = {value: index for index, value in enumerate(id_to_uuid)}
+
+    uuid_embeddings_path = "./embeddings.pt"
+    uuid_embeddings = torch.load(uuid_embeddings_path, weights_only=True)
+
+    # Create Faiss index
+    faiss.normalize_L2(uuid_embeddings.cpu().numpy())
+    index = faiss.IndexFlatIP(uuid_embeddings.shape[-1])
+    index.add(uuid_embeddings)
+
+    # Normalize query
+    l2_norm = np.linalg.norm(query_embeddings, axis=1, keepdims=True)
+    query_embeddings = query_embeddings / l2_norm
+
+    # Find closest
+    distances, indices = index.search(query_embeddings, top_k)
+
+    id_to_choose = 0
+    y_score = np.clip(distances[:, id_to_choose], 0.0, 1.0)
+    y_score_bool = y_score > minimum_confidence_level
+    # datetime_bool = query_datetimes < id_to_datetime[indices[:, 0]]
+
+    output = tuple(zip(
+        id_to_uuid[indices[:, id_to_choose]],          # Closest neighbour: 0e6519b6-8d41-4d0f-8d3b-7c9ab1f5aab6
+        # y_score_bool * datetime_bool,     # Neighbour found or not
+        y_score_bool,
+    ))
+    """
+    Example of output for batch_size = 2
+    (('000be48d-c88c-4d48-8b7a-28430ac9b57d', False),
+     ('000be48d-c88c-4d48-8b7a-28430ac9b57d', True))
+    """
+    return output
+
+
 @app.post("/test_request")
 async def test_request():
     # url = 'https://s3.ritm.media/yappy-db-duplicates/16a91af7-f3ac-4517-a051-5240b30f3217.mp4'
-    url = 'https://s3.ritm.media/yappy-db-duplicates/000be48d-c88c-4d48-8b7a-28430ac9b57d.mp4'
+    # url = 'https://s3.ritm.media/yappy-db-duplicates/000be48d-c88c-4d48-8b7a-28430ac9b57d.mp4'
+
+    # Duplicate
+    # url = 'https://s3.ritm.media/yappy-db-duplicates/b5f191e6-42e0-43f5-8773-560643de17fb.mp4'
+
+    # Original
+    url = 'https://s3.ritm.media/yappy-db-duplicates/55635719-38d9-4adb-b455-4c852ed869e9.mp4'
+
     video_tensor_short, video_tensor_long = video_url_to_tensor(url=url)
-    embeddings = send_video_to_triton(video_tensor_short, video_tensor_long)
-    embeddings = embeddings.tolist()
-    return {"result": embeddings}
+    query_embeddings = send_video_to_triton(video_tensor_short, video_tensor_long)
+    query_embeddings = torch.tensor(query_embeddings)
+    output = search_in_faiss(query_embeddings=query_embeddings)
+
+    # Если в строчке значение False, значит дубликата нет!
+    print(output)
+    print(query_embeddings.shape)
+    return {"result": 123}
