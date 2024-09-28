@@ -4,11 +4,13 @@ services:
     build:
       context: .
       dockerfile: docker/backend/Dockerfile
+    ports:
+      - "8000:8000"
     volumes:
       - ./duplicates/backend:/app/backend
       - ./data/:/app/data
     command: >
-       /bin/sh -c "python -m poetry run uvicorn backend.main:app --host 0.0.0.0 --port 8001 --reload"
+       /bin/sh -c "python -m poetry run uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload"
 
   frontend:
     container_name: frontend
@@ -34,17 +36,9 @@ services:
     build:
       context: .
       dockerfile: docker/triton/Dockerfile
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [ gpu ]
+
     volumes:
       - ./duplicates/triton/models:/models
-    environment:
-      - NVIDIA_VISIBLE_DEVICES=all
     command: >
         /bin/sh -c "tritonserver --http-port=8002 --metrics-port=8003 --grpc-port=8004 --model-repository=/models"
     ports:
