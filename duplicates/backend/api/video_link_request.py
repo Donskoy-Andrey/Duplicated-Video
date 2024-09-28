@@ -1,7 +1,7 @@
 from pydantic import BaseModel, Field, HttpUrl
 
 
-class VideoLinkRequest(BaseModel):
+class videoLinkRequest(BaseModel):
     link: HttpUrl = Field(
         ...,
         description="Ссылка на видео",

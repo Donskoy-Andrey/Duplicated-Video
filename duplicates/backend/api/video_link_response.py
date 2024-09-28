@@ -4,7 +4,7 @@ from typing import Optional
 from pydantic import BaseModel, Field
 
 
-class VideoLinkResponse(BaseModel):
+class videoLinkResponse(BaseModel):
     is_duplicate: bool = Field(
         ...,
         description="Признак дублирования",
@@ -17,7 +17,7 @@ class VideoLinkResponse(BaseModel):
     )
 
 
-class VideoLinkResponseFront(VideoLinkResponse):
+class videoLinkResponseFront(videoLinkResponse):
     link_duplicate: Optional[str] = Field(
         None,
         description="Ссылка на дубликат",

@@ -6,8 +6,8 @@ from fastapi import FastAPI, File, UploadFile, Form, HTTPException, APIRouter
 from fastapi.middleware.cors import CORSMiddleware
 
 from .api.check_video_duplicate import VideoDuplicateChecker
-from .api.video_link_request import VideoLinkRequest
-from .api.video_link_response import VideoLinkResponse, VideoLinkResponseFront
+from .api.video_link_request import videoLinkRequest
+from .api.video_link_response import videoLinkResponse, videoLinkResponseFront
 
 app = FastAPI(
     title="Video Duplicate Checker API",
@@ -40,31 +40,31 @@ duplicate_checker = VideoDuplicateChecker()
 
 
 @app.post("/check-video-duplicate",
-          response_model=VideoLinkResponse,
+          response_model=videoLinkResponse,
           responses={
               400: {"description": "Неверный запрос"},
               500: {"description": "Ошибка сервера"}
           },
           tags=["API для проверки дубликатов видео"],
           summary="Проверка видео на дублирование")
-async def check_duplicate(request: VideoLinkRequest):
-    return await duplicate_checker.check_video_duplicate(request)
+async def check_duplicate(body: videoLinkRequest):
+    return await duplicate_checker.check_video_duplicate(body)
 
 
 @app.post("/front-check-video-duplicate",
-          response_model=VideoLinkResponseFront,
+          response_model=videoLinkResponseFront,
           responses={
               400: {"description": "Неверный запрос"},
               500: {"description": "Ошибка сервера"}
           },
           tags=["API для проверки дубликатов видео"],
           summary="Проверка видео на дублирование")
-async def task_api(link_request: VideoLinkRequest):
+async def task_api(link_request: videoLinkRequest):
     response = await duplicate_checker.check_video_duplicate(link_request)
     if response.is_duplicate:
         url = f"https://s3.ritm.media/yappy-db-duplicates/{response.duplicate_for}.mp4"
-        return VideoLinkResponseFront(is_duplicate=response.is_duplicate, duplicate_for=response.duplicate_for,
+        return videoLinkResponseFront(is_duplicate=response.is_duplicate, duplicate_for=response.duplicate_for,
                                       link_duplicate=url)
     else:
-        return VideoLinkResponseFront(is_duplicate=response.is_duplicate, duplicate_for=response.duplicate_for,
+        return videoLinkResponseFront(is_duplicate=response.is_duplicate, duplicate_for=response.duplicate_for,
                                       link_duplicate=None)
