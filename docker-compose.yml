@@ -2,13 +2,78 @@ services:
   backend:
     container_name: backend
     build:
-      context: .
       dockerfile: docker/backend/Dockerfile
+      context: .
+    ports:
+      - "8001:8001"
+      - "8081:8081"
+    command: python3 /app/web
+    restart: on-failure
+    env_file:
+      - ./duplicates/backend/web/config/.env
     volumes:
-      - ./duplicates/backend:/app/backend
-      - ./data/:/app/data
-    command: >
-       /bin/sh -c "python -m poetry run uvicorn backend.main:app --host 0.0.0.0 --port 8001 --reload"
+#      - ./duplicates/backend/__init__.py:/app/duplicates/__init__.py
+      - ./duplicates/backend:/app/
+      - ./data/:/data
+    depends_on:
+      db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: curl --fail http://0.0.0.0:8001/api/tech/liveness || exit 1
+      interval: 1s
+      timeout: 1s
+      retries: 5
+
+  rabbitmq:
+    container_name: rabbitmq
+    image: rabbitmq:3.13-management
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+#      test: curl --fail http://0.0.0.0:15672 || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 20
+    ports:
+      - '5672:5672'
+      - '15672:15672'
+
+  db:
+    container_name: db
+    image: postgres:latest
+    ports:
+      - "5432:5432"
+    command: [ "postgres", "-c", "log_statement=all", "-c", "log_destination=stderr" ]
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-U", "postgres", "-d", "postgres" ]
+      interval: 1s
+      retries: 20
+    environment:
+      POSTGRES_DB: "postgres"
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "postgres"
+
+  consumer:
+    container_name: consumer
+    build:
+      dockerfile: docker/backend/Dockerfile
+      context: .
+    command: python3 /app/consumer
+    restart: on-failure
+    env_file:
+      - ./duplicates/backend/consumer/config/.env
+    volumes:
+#      - ./duplicates/backend/__init__.py:/app/duplicates/__init__.py
+      - ./duplicates/backend:/app/
+      - ./data/:/data
+    depends_on:
+      db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      backend:
+        condition: service_healthy
 
   frontend:
     container_name: frontend
@@ -28,6 +93,11 @@ services:
       dockerfile: docker/webserver/Dockerfile
     ports:
       - "80:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+      frontend:
+        condition: service_started
 
   triton:
     container_name: triton
@@ -51,70 +121,3 @@ services:
       - 8002:8002
       - 8003:8003
       - 8004:8004
-
-
-  rabbitmq:
-    image: rabbitmq:3.13-management
-    healthcheck:
-      test: rabbitmq-diagnostics -q ping
-      interval: 5s
-      timeout: 5s
-      retries: 20
-    ports:
-      - '5672:5672'
-      - '15672:15672'
-
-  db:
-    image: postgres:latest
-    ports:
-      - "5432:5432"
-    command: [ "postgres", "-c", "log_statement=all", "-c", "log_destination=stderr" ]
-    healthcheck:
-      test: [ "CMD", "pg_isready", "-U", "postgres", "-d", "postgres" ]
-      interval: 1s
-      retries: 20
-    environment:
-      POSTGRES_DB: "postgres"
-      POSTGRES_USER: "postgres"
-      POSTGRES_PASSWORD: "postgres"
-
-  web:
-    build:
-      dockerfile: Dockerfile
-      context: .
-    ports:
-      - "8000:8000"
-      - "8080:8080"
-    command: exec python3 web
-    restart: on-failure
-    env_file:
-      - ./web/config/.env
-    volumes:
-      - .:/code
-    depends_on:
-      db:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
-    healthcheck:
-      test: curl --fail http://0.0.0.0:8001/api/tech/liveness || exit 1
-      interval: 5s
-      timeout: 1s
-      retries: 5
-
-  consumer:
-    build:
-      dockerfile: Dockerfile
-      context: .
-    command: exec python3 web consumer
-    restart: on-failure
-    env_file:
-      - ./consumer/config/.env
-    volumes:
-      - .:/code
-    depends_on:
-      db:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
-

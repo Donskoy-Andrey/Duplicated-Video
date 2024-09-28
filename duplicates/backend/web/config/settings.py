@@ -3,8 +3,8 @@ from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     BIND_IP: str = '0.0.0.0'
-    BIND_PORT: int = 8000
-    METRICS_APP_PORT: int = 8080
+    BIND_PORT: int = 8001
+    METRICS_APP_PORT: int = 8081
 
     BACKEND_CORS_ORIGINS: list[str] = []
 

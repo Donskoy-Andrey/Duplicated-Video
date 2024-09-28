@@ -36,7 +36,7 @@ def setup_middleware(app: FastAPI) -> None:
 
 
 def setup_routers(app: FastAPI) -> None:
-    app.include_router(v1_router, prefix='/api/v1')
+    app.include_router(v1_router, prefix='/api/v1') # затестить
     app.include_router(tech_router, prefix='/api/tech')
 
 

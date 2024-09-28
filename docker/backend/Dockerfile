@@ -2,9 +2,15 @@ FROM python:3.11
 
 WORKDIR /app
 
+ENV PYTHONPATH=/app
+
+RUN mkdir -p /duplicates/backend
+
+COPY ./duplicates/backend/__init__.py /app/duplicates/__init__.py
+
 COPY ./pyproject.toml ./
 
-#COPY ./poetry.lock ./
+COPY ./poetry.lock ./
 
 RUN apt-get update && apt-get install ffmpeg libsm6 libxext6  -y
 

@@ -3,6 +3,7 @@ from typing import Any
 
 import msgpack
 from fastapi import Depends
+from pydantic import BaseModel
 from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette_context import context
@@ -17,6 +18,26 @@ from aio_pika.abc import DeliveryMode, ExchangeType
 from aio_pika import Message, RobustChannel, Channel
 
 from web.config.settings import settings
+
+
+class tmp(BaseModel):
+    a: int
+    b: str
+    c: list[str]
+
+
+@router.post('/puk')
+async def first_post_handler(body: tmp, session: AsyncSession = Depends(get_db),):
+    # row = await session.execute(select(text('1')))
+    # result, = row.one()
+    #
+    # row1 = await session.scalars(select(text('1')))
+    # result1 = row1.one()
+    # logger.info('Testim %s; %s', result, result1)
+    #
+    # await publish_message({'test': 'test'})
+
+    return ORJSONResponse({'message': 'perduk!'}, status_code=200)
 
 
 @router.get('/puk')
