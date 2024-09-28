@@ -108,7 +108,6 @@ class VideoDuplicateChecker:
             raise ValueError(f"Не удалось открыть видео по URL: {url}")
         print('Файл открыт ')
         total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-        print(f'{total_frames=}')
         frames = []
         for i in range(total_frames):
             ret, frame = cap.read()
@@ -119,11 +118,8 @@ class VideoDuplicateChecker:
             frame_tensor = torch.from_numpy(frame_rgb).permute(2, 0, 1)  # (H, W, C) -> (C, H, W)
             frames.append(frame_tensor)
         cap.release()
-        print('cap.release()')
         frames = torch.stack(frames)
-        print('Между')
         frames = frames.permute(1, 0, 2, 3)
-        print(f"{frames.shape=}")
         transform = VideoTransform()
         video_tensor_short, video_tensor_long = transform({"video": frames})["video"]
 
@@ -198,12 +194,10 @@ class VideoDuplicateChecker:
             print('ЗАПРОС ПОШЕЛ ')
             # Обработка видео URL в тензоры
             video_tensor_long, video_tensor_short = await self.video_url_to_tensor(str(link_request.link))
-            print(f'{video_tensor_long.shape=}')
-            print(f'{video_tensor_short.shape=}')
+
 
             # Отправка тензоров видео на сервер Triton для получения эмбеддингов
             embeddings = await self.send_video_to_triton(video_tensor_short, video_tensor_long)
-            print(f'{embeddings=}')
 
             # Поиск дубликатов с использованием эмбеддингов
             is_duplicate, duplicate_video_id = await self.search_nearest_vector(embeddings)

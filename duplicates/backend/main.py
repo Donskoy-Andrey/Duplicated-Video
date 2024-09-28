@@ -9,7 +9,11 @@ from duplicates.backend.api.check_video_duplicate import VideoDuplicateChecker
 from duplicates.backend.api.video_link_request import VideoLinkRequest
 from duplicates.backend.api.video_link_response import VideoLinkResponse, VideoLinkResponseFront
 
-app = FastAPI()
+app = FastAPI(
+    title="Video Duplicate Checker API",
+    version="1.0.0",
+    description="API для проверки дубликатов видео"
+)
 
 app.add_middleware(
     CORSMiddleware,
