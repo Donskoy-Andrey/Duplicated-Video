@@ -79,9 +79,9 @@ import tritonclient.http as httpclient
 from fastapi import FastAPI, HTTPException
 import tritonclient.grpc as grpcclient
 
-from duplicates.backend.api.convert_url_to_tenzor import VideoTransform
-from duplicates.backend.api.video_link_request import VideoLinkRequest
-from duplicates.backend.api.video_link_response import VideoLinkResponse
+from .convert_url_to_tenzor import VideoTransform
+from .video_link_request import VideoLinkRequest
+from .video_link_response import VideoLinkResponse
 
 
 class VideoDuplicateChecker:

@@ -5,9 +5,9 @@ from fastapi import FastAPI, File, UploadFile, Form, HTTPException, APIRouter
 
 from fastapi.middleware.cors import CORSMiddleware
 
-from duplicates.backend.api.check_video_duplicate import VideoDuplicateChecker
-from duplicates.backend.api.video_link_request import VideoLinkRequest
-from duplicates.backend.api.video_link_response import VideoLinkResponse, VideoLinkResponseFront
+from .api.check_video_duplicate import VideoDuplicateChecker
+from .api.video_link_request import VideoLinkRequest
+from .api.video_link_response import VideoLinkResponse, VideoLinkResponseFront
 
 app = FastAPI(
     title="Video Duplicate Checker API",
