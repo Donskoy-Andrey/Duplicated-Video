@@ -52,3 +52,13 @@ services:
       - 8003:8003
       - 8004:8004
 
+  locust:
+    container_name: locust
+    image: locustio/locust
+    ports:
+      - 8089:8089
+    volumes:
+      - ./:/mnt/locust
+    command: -f /mnt/locust/locustfile.py --host http://backend:8001
+    depends_on:
+      - backend
