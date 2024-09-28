@@ -1,7 +1,7 @@
 // ResponseInfo.js
 import React, {useEffect} from 'react';
 
-const ResponseInfo = ({showToast, setShowToast, is_duplicate, duplicate_for, link_duplicate}) => {
+const ResponseInfo = ({showToast, setShowToast, is_duplicate}) => {
     const onClose = () => {
         setShowToast(false);
     };
