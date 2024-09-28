@@ -11,9 +11,13 @@ class videoLinkRequest(BaseModel):
 class videoRequestFront(BaseModel):
     link: str = Field(
         ...,
+        description="ссылка на видео",
+        examples=["https://example.com/video.mp4"]
+    )
+    confidence_level: float = Field(
+        ...,
         description="Уровень уверенности предсказания",
     )
-    confidence_level: float
 
 
 class videoLinkResponse(BaseModel):

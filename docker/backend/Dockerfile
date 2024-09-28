@@ -4,7 +4,7 @@ WORKDIR /app
 
 COPY ./pyproject.toml ./
 
-#COPY ./poetry.lock ./
+COPY ./poetry.lock ./
 
 RUN apt-get update && apt-get install ffmpeg libsm6 libxext6  -y
 
