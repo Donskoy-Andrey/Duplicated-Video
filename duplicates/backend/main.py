@@ -46,6 +46,7 @@ async def check_video_duplicate_front(video: videoRequestFront):
 
 
 
+
 @app.post("/check-video-duplicate",
           response_model=videoLinkResponse,
           responses={
@@ -75,6 +76,7 @@ async def check_video_duplicate(videoLink: videoLinkRequest):
         raise HTTPException(status_code=500, detail="Ошибка сервера")
     except Exception as e:
         raise HTTPException(status_code=500, detail="Ошибка сервера")
+
 
 @app.post(
     "/check-video-file-duplicate-front",
@@ -122,7 +124,6 @@ async def upload_video(file: UploadFile = File(...), confidenceLevel: float=Form
         raise HTTPException(status_code=500, detail="Ошибка сервера")
     except Exception as e:
         raise HTTPException(status_code=500, detail="Ошибка сервера")
-
 
 
 
