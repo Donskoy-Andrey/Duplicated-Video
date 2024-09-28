@@ -1,23 +1,20 @@
-import cv2
-import tritonclient.grpc as grpcclient
-import numpy as np
-import torch
 
-from torchvision.transforms import Compose, Lambda
-from torchvision.transforms._transforms_video import (
-    CenterCropVideo,
-    NormalizeVideo,
-)
+import cv2
+import faiss
+import numpy as np
+import pandas as pd
+import torch
+import tritonclient.grpc as grpcclient
 from pytorchvideo.transforms import (
     ApplyTransformToKey,
     ShortSideScale,
     UniformTemporalSubsample,
 )
-import requests
-from io import BytesIO
-from pytorchvideo.data.encoded_video import select_video_class
-import pandas as pd
-import faiss
+from torchvision.transforms import Compose, Lambda
+from torchvision.transforms._transforms_video import (
+    CenterCropVideo,
+    NormalizeVideo,
+)
 
 
 class PackPathway(torch.nn.Module):
@@ -217,7 +214,7 @@ def search_in_faiss(
 
     id_to_uuid = embeddings_uuid
     # id_to_datetime = embeddings_datetimes
-    uuid_to_id = {value: index for index, value in enumerate(id_to_uuid)}
+    # uuid_to_id = {value: index for index, value in enumerate(id_to_uuid)}
 
     uuid_embeddings_path = "./embeddings.pt"
     uuid_embeddings = torch.load(uuid_embeddings_path, weights_only=True)
