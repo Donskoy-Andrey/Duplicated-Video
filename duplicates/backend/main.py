@@ -32,10 +32,10 @@ async def check_video_duplicate_front(video: videoRequestFront):
         if has_duplicate:
             return videoLinkResponseFront(
                 is_duplicate=True,
-                duplicate_for=f"https://s3.ritm.media/yappy-db-duplicates/{potential_duplicate_uuid}.mp4",
+                link_duplicate=f"https://s3.ritm.media/yappy-db-duplicates/{potential_duplicate_uuid}.mp4",
             )
         return videoLinkResponseFront(
-            is_duplicate=False, duplicate_for="",
+            is_duplicate=False, link_duplicate="",
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail="Неверный запрос")
