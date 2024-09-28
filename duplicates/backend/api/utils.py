@@ -28,7 +28,7 @@ from pytorchvideo.data.encoded_video import select_video_class
 import pandas as pd
 import faiss
 
-from duplicates.backend.api.base import videoLinkResponse
+from .base import videoLinkResponse
 from torchvision.transforms import Compose, Lambda
 from torchvision.transforms._transforms_video import (
     CenterCropVideo,
@@ -276,23 +276,11 @@ def video_bytes_to_tensor(bytes_data):
 
 
 async def search_duplicate(path_link: Union[str, bytes]):
-    try:
         video_tensor_short, video_tensor_long = await asyncio.to_thread(video_url_to_tensor, path_link)
         query_embeddings = await asyncio.to_thread(send_video_to_triton, video_tensor_short, video_tensor_long)
         query_embeddings = torch.tensor(query_embeddings)
         potential_duplicate_uuid, has_duplicate = search_in_faiss(query_embeddings=query_embeddings)[0]
+        return has_duplicate, potential_duplicate_uuid
 
-        if has_duplicate:
-            return videoLinkResponse(
-                is_duplicate=True, duplicate_for=potential_duplicate_uuid,
-            )
-        return videoLinkResponse(
-            is_duplicate=False, duplicate_for="",
-        )
 
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail="Неверный запрос")
-    except RuntimeError as e:
-        raise HTTPException(status_code=500, detail="Ошибка сервера")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Ошибка сервера")
+

@@ -21,7 +21,28 @@ app = FastAPI(
           tags=["API для проверки дубликатов видео на Фронтенд-Сервере"],
           summary="Проверка видео на дублирование")
 async def check_video_duplicate_front(video: videoRequestFront):
-    await search_duplicate(video.link)
+    try:
+        has_duplicate,potential_duplicate_uuid = await search_duplicate(video.link)
+        print(has_duplicate,potential_duplicate_uuid)
+        if has_duplicate:
+            print('2*'*100)
+            return videoLinkResponseFront(
+                is_duplicate=True, link_duplicate=f"https://s3.ritm.media/yappy-db-duplicates/{potential_duplicate_uuid}.mp4",
+            )
+
+        return videoLinkResponseFront(
+            is_duplicate=False, link_duplicate="",
+        )
+
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail="Неверный запрос")
+    except RuntimeError as e:
+        raise HTTPException(status_code=500, detail="Ошибка сервера")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Ошибка сервера")
+
+
+
 
 @app.post("/check-video-duplicate",
           response_model=videoLinkResponse,
@@ -32,10 +53,29 @@ async def check_video_duplicate_front(video: videoRequestFront):
           tags=["API для проверки дубликатов видео"],
           summary="Проверка видео на дублирование")
 async def check_video_duplicate(videoLink: videoLinkRequest):
-    await search_duplicate(videoLink.link)
+    try:
+        has_duplicate,potential_duplicate_uuid = await search_duplicate(videoLink.link)
+        print(has_duplicate,potential_duplicate_uuid)
+        if has_duplicate:
+            print('2*'*100)
+            return videoLinkResponse(
+                is_duplicate=True, duplicate_for=potential_duplicate_uuid,
+            )
+
+        return videoLinkResponse(
+            is_duplicate=False, duplicate_for="",
+        )
+        print('3*'*100)
+
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail="Неверный запрос")
+    except RuntimeError as e:
+        raise HTTPException(status_code=500, detail="Ошибка сервера")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Ошибка сервера")
 
 @app.post(
-    "/upload-video",
+    "/check-video-file-duplicate-front",
     response_model=videoLinkResponseFront,
     tags=["API для загрузки видео"],
     summary="Загрузка видеофайла",
@@ -48,8 +88,29 @@ async def upload_video(videoFile: UploadFile = File(...)):
     if videoFile.content_type != "video/mp4":
         raise HTTPException(status_code=400, detail="Допускаются только файлы MP4.")
 
-    video_bytes = await videoFile.read()
-    await search_duplicate(video_bytes)
+
+    try:
+        video_bytes = await videoFile.read()
+        has_duplicate,potential_duplicate_uuid = await search_duplicate(video_bytes)
+        print(has_duplicate,potential_duplicate_uuid)
+        if has_duplicate:
+            print('2*'*100)
+            return videoLinkResponseFront(
+                is_duplicate=True, link_duplicate=f"https://s3.ritm.media/yappy-db-duplicates/{potential_duplicate_uuid}.mp4",
+            )
+
+        return videoLinkResponseFront(
+            is_duplicate=False, link_duplicate="",
+        )
+
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail="Неверный запрос")
+    except RuntimeError as e:
+        raise HTTPException(status_code=500, detail="Ошибка сервера")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Ошибка сервера")
+
+
 
 
 
