@@ -59,6 +59,6 @@ services:
       - 8089:8089
     volumes:
       - ./:/mnt/locust
-    command: -f /mnt/locust/locustfile.py --host http://backend:8001
+    command: -f /mnt/locust/locustfile.py
     depends_on:
       - backend

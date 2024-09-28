@@ -58,7 +58,7 @@ urls = [
 
 
 class VideoDuplicateTestUser(HttpUser):
-    wait_time = between(1, 5)
+    wait_time = between(1, 3)
 
     @task
     def check_video_duplicate(self):
@@ -67,8 +67,7 @@ class VideoDuplicateTestUser(HttpUser):
             "link": random.choice(urls)
         }
         response = self.client.post(url, json=body)
-        print(f"Response status: {response.status_code}")
-        print(f"Response body: {response.text}")
+        print(response.content)
 
 
 
