@@ -4,6 +4,9 @@ import VideoPlayer from "../videoPlayer/VideoPlayer";
 import ResponseInfo from "../responseInfo/ResponseInfo";
 import ServerErrorToast from "../serverErrorToast/ServerErrorToast";
 
+const REACT_APP_BACKEND = "http://localhost/api";
+
+
 class MainPage extends React.Component {
     constructor(props) {
         super(props);
@@ -14,6 +17,7 @@ class MainPage extends React.Component {
             showToast: false,       // Флаг отображения уведомления
             responseData: {},       // Данные ответа сервера
             currentDocType: '',     // Текущий тип документа (если требуется)
+            confidenceLevel: 0.97,  // Уровень уверенности модели
             files: [],              // Массив файлов
             errorCode: null,        // Код ошибки сервера
             errorMessage: null      // Сообщение ошибки сервера
@@ -33,6 +37,11 @@ class MainPage extends React.Component {
         this.setState({ responseData: data });
     }
 
+    setConfidenceLevel = (confidenceLevel) => {
+        if (confidenceLevel >= 0.8 || confidenceLevel <= 0.99) {}
+        this.setState({ confidenceLevel: confidenceLevel });
+    }
+
     setShowToast = (value) => {
         this.setState({ showToast: value });
     }
@@ -45,18 +54,91 @@ class MainPage extends React.Component {
         this.setState({ errorMessage: value });
     }
 
+    // Новая функция для отправки локального файла на сервер с добавлением confidenceLevel
+    uploadFileToBackend = async (file) => {
+        try {
+            this.setState({ loading: true });
+
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('confidenceLevel', this.state.confidenceLevel);
+
+            const response = await fetch(`${REACT_APP_BACKEND}/file_upload`, {
+                method: 'POST',
+                body: formData,
+            });
+
+            if (!response.ok) {
+                throw new Error(`Ошибка сервера: ${response.status}`);
+            }
+
+            const data = await response.json();
+
+            // Предполагается, что ответ сервера содержит is_duplicate, duplicate_for, link_duplicate
+            this.setResponse(data);
+            this.setShowToast(true);
+        } catch (error) {
+            this.setState({
+                errorCode: error.response?.status || '500',
+                errorMessage: error.message || "Произошла ошибка при отправке файла",
+            });
+        } finally {
+            this.setState({ loading: false });
+        }
+    }
+
+    // Новая функция для отправки URL на сервер с добавлением confidenceLevel
+    uploadUrlToBackend = async (videoUrl) => {
+        try {
+            this.setState({ loading: true });
+
+            const payload = {
+                "link": videoUrl,
+                "confidence_level": this.state.confidenceLevel
+            };
+
+            const response = await fetch(`${REACT_APP_BACKEND}/check-video-duplicate-front`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(payload),
+            });
+
+            if (!response.ok) {
+                throw new Error(`Ошибка сервера: ${response.status}`);
+            }
+
+            const data = await response.json();
+
+            this.setResponse(data);
+            this.setShowToast(true);
+        } catch (error) {
+            this.setState({
+                errorCode: error.response?.status || '500',
+                errorMessage: error.message || "Произошла ошибка при отправке URL",
+            });
+        } finally {
+            this.setState({ loading: false });
+        }
+    }
+
     sendLocalFile = async (file) => {
         this.setResponse({});
         const fileUrl = URL.createObjectURL(file);
         this.setState({ originalVideoUrl: fileUrl, uploadedFile: file });
-        await this.mockUploadFileToBackend(file);
+        await this.uploadFileToBackend(file);
+        // Если нужно использовать моковую функцию вместо настоящей, раскомментируйте следующую строку:
+        // await this.mockUploadFileToBackend(file);
     }
 
     sendFileFromWeb = async (videoUrl) => {
         this.setResponse({});
         console.log("Загруженный URL видео: ", videoUrl);
         this.setState({ originalVideoUrl: videoUrl });
-        await this.mockUploadUrlToBackend(videoUrl);
+        await this.uploadUrlToBackend(videoUrl);
+        // Если нужно использовать моковую функцию вместо настоящей, раскомментируйте следующую строку:
+        // await this.mockUploadUrlToBackend(videoUrl);
     }
 
     handleValidVideoUrl = (url) => {
@@ -135,7 +217,7 @@ class MainPage extends React.Component {
     }
 
     render() {
-        const { loading, originalVideoUrl, responseData, showToast, errorCode, errorMessage } = this.state;
+        const { loading, originalVideoUrl, responseData, showToast, errorCode, errorMessage, confidenceLevel } = this.state;
         const { is_duplicate, duplicate_for, link_duplicate } = responseData;
 
         return (
@@ -148,10 +230,17 @@ class MainPage extends React.Component {
                         </symbol>
                     </svg>
 
-                    <div className="main-header"></div>
+                    <div className="main-header">
+                        <h1>
+                            Поиск дубликатов видео <br />
+                            <span className="text-warning"> AAA IT</span> для <span className="yappy">Yappy</span>
+                        </h1>
+                    </div>
 
                     <FileUploader
                         sendLocalFile={this.sendLocalFile}
+                        confidenceLevel={confidenceLevel}
+                        setConfidenceLevel={this.setConfidenceLevel}
                         sendFileFromWeb={this.sendFileFromWeb}
                         setFiles={this.setFiles}
                         currentDocType={this.state.currentDocType}

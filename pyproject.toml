@@ -41,7 +41,7 @@ requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.ruff]
-line-length = 80
+line-length = 120
 lint.select = [
     "E",  # Ошибка стиля
     "W",  # Предупреждения по стилю

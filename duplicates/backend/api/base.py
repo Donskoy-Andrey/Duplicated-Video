@@ -11,9 +11,13 @@ class videoLinkRequest(BaseModel):
 class videoRequestFront(BaseModel):
     link: str = Field(
         ...,
+        description="ссылка на видео",
+        examples=["https://example.com/video.mp4"]
+    )
+    confidence_level: float = Field(
+        ...,
         description="Уровень уверенности предсказания",
     )
-    confidence_level: float
 
 
 class videoLinkResponse(BaseModel):
@@ -42,8 +46,3 @@ class videoLinkResponseFront(BaseModel):
             "https://s3.ritm.media/yappy-db-duplicates/000ab50a-e0bd-4577-9d21-f1f426144321.mp4",
         ]
     )
-
-
-
-
-

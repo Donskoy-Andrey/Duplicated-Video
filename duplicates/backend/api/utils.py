@@ -3,10 +3,14 @@ import tempfile
 from http.client import HTTPException
 from typing import Union
 
+
 import cv2
 import tritonclient.grpc as grpcclient
+import faiss
 import numpy as np
+import pandas as pd
 import torch
+import tritonclient.grpc as grpcclient
 
 from torchvision.transforms import Compose, Lambda
 from torchvision.transforms._transforms_video import (
@@ -25,6 +29,11 @@ import pandas as pd
 import faiss
 
 from duplicates.backend.api.base import videoLinkResponse
+from torchvision.transforms import Compose, Lambda
+from torchvision.transforms._transforms_video import (
+    CenterCropVideo,
+    NormalizeVideo,
+)
 
 
 class PackPathway(torch.nn.Module):
@@ -210,10 +219,10 @@ def send_video_to_triton(video_tensor_short, video_tensor_long, server_url="trit
 
 
 def search_in_faiss(
-        query_embeddings: torch.Tensor,
-        # query_datetimes: np.ndarray,
-        minimum_confidence_level: float = 0.97,
-        top_k: int = 3,
+    query_embeddings: torch.Tensor,
+    # query_datetimes: np.ndarray,
+    minimum_confidence_level: float = 0.97,
+    top_k: int = 3,
 ):
     assert query_embeddings.shape[1] == 400  # [batch, 400]
 
@@ -224,7 +233,7 @@ def search_in_faiss(
 
     id_to_uuid = embeddings_uuid
     # id_to_datetime = embeddings_datetimes
-    uuid_to_id = {value: index for index, value in enumerate(id_to_uuid)}
+    # uuid_to_id = {value: index for index, value in enumerate(id_to_uuid)}
 
     uuid_embeddings_path = "./embeddings.pt"
     uuid_embeddings = torch.load(uuid_embeddings_path, weights_only=True)
@@ -247,7 +256,7 @@ def search_in_faiss(
     # datetime_bool = query_datetimes < id_to_datetime[indices[:, 0]]
 
     output = tuple(zip(
-        id_to_uuid[indices[:, id_to_choose]],  # Closest neighbour: 0e6519b6-8d41-4d0f-8d3b-7c9ab1f5aab6
+        id_to_uuid[indices[:, id_to_choose]],          # Closest neighbour: 0e6519b6-8d41-4d0f-8d3b-7c9ab1f5aab6
         # y_score_bool * datetime_bool,     # Neighbour found or not
         y_score_bool,
     ))
