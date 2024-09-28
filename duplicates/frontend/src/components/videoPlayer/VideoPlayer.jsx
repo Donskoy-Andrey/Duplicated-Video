@@ -138,7 +138,7 @@ const VideoPlayer = ({ src, poster }) => {
             {/* Центральные контролы */}
             <div className="central-controls">
                 <button
-                    onClick={togglePlayPause}
+                    // onClick={togglePlayPause}
                     className="central-button play-pause-button"
                     aria-label={isPlaying ? 'Пауза' : 'Воспроизведение'}
                 >
