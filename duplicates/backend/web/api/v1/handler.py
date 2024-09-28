@@ -1,4 +1,5 @@
 import contextlib
+from http.client import HTTPException
 from typing import Any
 
 import msgpack
@@ -9,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from starlette_context import context
 from starlette_context.errors import ContextDoesNotExistError
 
+from consumer.handlers.handler import search_duplicate
 from .router import router
 from fastapi.responses import ORJSONResponse
 from web.storage.db import get_db
@@ -19,6 +21,9 @@ from aio_pika import Message, RobustChannel, Channel
 
 from web.config.settings import settings
 
+from .response_model import videoLinkResponseFront, videoLinkResponse
+from .request_model import videoLinkRequest, videoRequestFront
+
 
 class tmp(BaseModel):
     a: int
@@ -27,7 +32,7 @@ class tmp(BaseModel):
 
 
 @router.post('/puk')
-async def first_post_handler(body: tmp, session: AsyncSession = Depends(get_db),):
+async def first_post_handler(body: tmp, session: AsyncSession = Depends(get_db), ):
     # row = await session.execute(select(text('1')))
     # result, = row.one()
     #
@@ -40,8 +45,38 @@ async def first_post_handler(body: tmp, session: AsyncSession = Depends(get_db),
     return ORJSONResponse({'message': 'perduk!'}, status_code=200)
 
 
+@router.post("/check-video-duplicate-front",
+             response_model=videoLinkResponseFront,
+             responses={
+                 400: {"description": "Неверный запрос"},
+                 500: {"description": "Ошибка сервера"}
+             },
+             tags=["API для проверки дубликатов видео на Фронтенд-Сервере"],
+             summary="Проверка видео на дублирование")
+async def check_video_duplicate_front(video: videoRequestFront):
+    try:
+        has_duplicate, potential_duplicate_uuid = await search_duplicate(video.link)
+
+        if has_duplicate:
+            return videoLinkResponseFront(
+                is_duplicate=True,
+                link_duplicate=f"https://s3.ritm.media/yappy-db-duplicates/{potential_duplicate_uuid}.mp4",
+            )
+
+        return videoLinkResponseFront(
+            is_duplicate=False, link_duplicate="",
+        )
+
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail="Неверный запрос")
+    except RuntimeError as e:
+        raise HTTPException(status_code=500, detail="Ошибка сервера")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Ошибка сервера")
+
+
 @router.get('/puk')
-async def first_handler(session: AsyncSession = Depends(get_db),):
+async def first_handler(session: AsyncSession = Depends(get_db), ):
     row = await session.execute(select(text('1')))
     result, = row.one()
 
