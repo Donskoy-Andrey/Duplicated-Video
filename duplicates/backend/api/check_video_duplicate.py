@@ -80,8 +80,8 @@ from fastapi import FastAPI, HTTPException
 import tritonclient.grpc as grpcclient
 
 from .convert_url_to_tenzor import VideoTransform
-from .video_link_request import VideoLinkRequest
-from .video_link_response import VideoLinkResponse
+from .video_link_request import videoLinkRequest
+from .video_link_response import videoLinkResponse
 
 
 class VideoDuplicateChecker:
@@ -183,7 +183,58 @@ class VideoDuplicateChecker:
         duplicate_video_id = '23fac2f2-7f00-48cb-b3ac-aac8caa3b6b4' if is_duplicate else None
         return is_duplicate, duplicate_video_id
 
-    async def check_video_duplicate(self, link_request: VideoLinkRequest) -> VideoLinkResponse:
+    def _search_in_faiss(
+            query_embeddings: torch.Tensor,
+            # query_datetimes: np.ndarray,
+            minimum_confidence_level: float = 0.97,
+            top_k: int = 3,
+    ):
+        assert query_embeddings.shape[1] == 400  # [batch, 400]
+
+        uuid_path = './embeddings_uuid.csv'
+        embeddings_uuid = pd.read_csv(uuid_path)
+        # embeddings_datetimes = embeddings_uuid["created"].to_numpy().astype(np.datetime64)
+        embeddings_uuid = embeddings_uuid["uuid"].to_numpy()
+
+        id_to_uuid = embeddings_uuid
+        # id_to_datetime = embeddings_datetimes
+        uuid_to_id = {value: index for index, value in enumerate(id_to_uuid)}
+
+        uuid_embeddings_path = "./embeddings.pt"
+        uuid_embeddings = torch.load(uuid_embeddings_path, weights_only=True)
+
+        # Create Faiss index
+        faiss.normalize_L2(uuid_embeddings.cpu().numpy())
+        index = faiss.IndexFlatIP(uuid_embeddings.shape[-1])
+        index.add(uuid_embeddings)
+
+        # Normalize query
+        l2_norm = np.linalg.norm(query_embeddings, axis=1, keepdims=True)
+        query_embeddings = query_embeddings / l2_norm
+
+        # Find closest
+        distances, indices = index.search(query_embeddings, top_k)
+
+        id_to_choose = 0
+        y_score = np.clip(distances[:, id_to_choose], 0.0, 1.0)
+        y_score_bool = y_score > minimum_confidence_level
+        # datetime_bool = query_datetimes < id_to_datetime[indices[:, 0]]
+
+        output = tuple(zip(
+            id_to_uuid[indices[:, id_to_choose]],  # Closest neighbour: 0e6519b6-8d41-4d0f-8d3b-7c9ab1f5aab6
+            # y_score_bool * datetime_bool,     # Neighbour found or not
+            y_score_bool,
+        ))
+        """
+        Example of output for batch_size = 2
+        (('000be48d-c88c-4d48-8b7a-28430ac9b57d', False),
+         ('000be48d-c88c-4d48-8b7a-28430ac9b57d', True))
+        """
+        return output
+
+
+
+    async def check_video_duplicate(self, link_request: videoLinkRequest) -> videoLinkResponse:
         """
         Асинхронно проверяет, является ли видео дубликатом.
 
@@ -203,7 +254,7 @@ class VideoDuplicateChecker:
             is_duplicate, duplicate_video_id = await self.search_nearest_vector(embeddings)
 
             # Возврат результата
-            return VideoLinkResponse(
+            return videoLinkResponse(
                 is_duplicate=is_duplicate,
                 duplicate_for=duplicate_video_id
             )

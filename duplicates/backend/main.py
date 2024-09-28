@@ -23,10 +23,6 @@ app.add_middleware(
 )
 
 
-@app.get("/")
-async def root():
-    return {"message": "Hello World"}
-
 
 duplicate_checker = VideoDuplicateChecker()
 
@@ -47,8 +43,8 @@ duplicate_checker = VideoDuplicateChecker()
           },
           tags=["API для проверки дубликатов видео"],
           summary="Проверка видео на дублирование")
-async def check_duplicate(body: videoLinkRequest):
-    return await duplicate_checker.check_video_duplicate(body)
+async def check_duplicate(link: videoLinkRequest):
+    return await duplicate_checker.check_video_duplicate(link)
 
 
 @app.post("/front-check-video-duplicate",
