@@ -49,14 +49,14 @@ class MainPage extends React.Component {
         this.setResponse({});
         const fileUrl = URL.createObjectURL(file);
         this.setState({ originalVideoUrl: fileUrl, uploadedFile: file });
-        await this.uploadFileToBackend(file);
+        await this.mockUploadFileToBackend(file);
     }
 
     sendFileFromWeb = async (videoUrl) => {
         this.setResponse({});
         console.log("Загруженный URL видео: ", videoUrl);
         this.setState({ originalVideoUrl: videoUrl });
-        await this.uploadUrlToBackend(videoUrl);
+        await this.mockUploadUrlToBackend(videoUrl);
     }
 
     handleValidVideoUrl = (url) => {
@@ -68,64 +68,67 @@ class MainPage extends React.Component {
         this.setState({ originalVideoUrl: null });
     };
 
-    // Загрузка файла на бэкенд
-    uploadFileToBackend = async (file) => {
+    // Мок-функция для загрузки файла
+    mockUploadFileToBackend = async (file) => {
         try {
             this.setState({ loading: true });
-            const formData = new FormData();
-            formData.append('file', file);
 
-            const response = await fetch(`${process.env.REACT_APP_BACKEND}/test_file`, {
-                method: 'POST',
-                body: formData
-            });
+            // Имитируем задержку обработки
+            await new Promise(resolve => setTimeout(resolve, 1000));
 
-            if (!response.ok) {
-                throw new Error(`Ошибка ${response.status}: ${response.statusText}`);
+            // Симуляция успешного ответа
+            const mockResponse = {
+                is_duplicate: Math.random() < 0.5,      // Случайное определение, является ли видео дубликатом
+                duplicate_for: "1234567890abcdef",      // Идентификатор дубликата
+                link_duplicate: "https://s3.ritm.media/yappy-db-duplicates/4182b2d2-4264-41dd-b101-4c1c66f4bdab.mp4"
+            };
+
+            if (!mockResponse.is_duplicate) {
+                mockResponse.duplicate_for = null;
+                mockResponse.link_duplicate = null;
             }
 
-            const responseData = await response.json();
-            this.setResponse(responseData);
-            // this.setShowToast(true);
+            this.setResponse(mockResponse);
+            this.setShowToast(true);
 
         } catch (error) {
             this.setState({
-                errorCode: error.message,
-                errorMessage: "Произошла ошибка при отправке файла"
+                errorCode: '500',
+                errorMessage: "Произошла ошибка при имитации отправки файла"
             });
-            // this.setShowToast(true);
         } finally {
             this.setState({ loading: false });
         }
     }
 
-    // Отправка URL на бэкенд
-    uploadUrlToBackend = async (videoUrl) => {
+    // Мок-функция для отправки URL
+    mockUploadUrlToBackend = async (videoUrl) => {
         try {
             this.setState({ loading: true });
 
-            const response = await fetch(`${process.env.REACT_APP_BACKEND}/test_url`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ url: videoUrl })
-            });
+            // Имитируем задержку обработки
+            await new Promise(resolve => setTimeout(resolve, 1000));
 
-            if (!response.ok) {
-                throw new Error(`Ошибка ${response.status}: ${response.statusText}`);
+            // Симуляция успешного ответа
+            const mockResponse = {
+                is_duplicate: Math.random() < 0.5,      // Случайное определение, является ли видео дубликатом
+                duplicate_for: "1234567890abcdef",      // Идентификатор дубликата
+                link_duplicate: "https://s3.ritm.media/yappy-db-duplicates/4182b2d2-4264-41dd-b101-4c1c66f4bdab.mp4"
+            };
+
+            if (!mockResponse.is_duplicate) {
+                mockResponse.duplicate_for = null;
+                mockResponse.link_duplicate = null;
             }
 
-            const responseData = await response.json();
-            this.setResponse(responseData);
+            this.setResponse(mockResponse);
             this.setShowToast(true);
 
         } catch (error) {
             this.setState({
-                errorCode: error.message,
-                errorMessage: "Произошла ошибка при отправке URL"
+                errorCode: '500',
+                errorMessage: "Произошла ошибка при имитации отправки URL"
             });
-            // this.setShowToast(true);
         } finally {
             this.setState({ loading: false });
         }
@@ -179,7 +182,6 @@ class MainPage extends React.Component {
                         )}
                     </div>
 
-                    {/* Компонент для отображения информации об ответе или ошибке */}
                     {!loading && showToast && (
                         <ResponseInfo
                             showToast={showToast}
@@ -188,17 +190,14 @@ class MainPage extends React.Component {
                             duplicate_for={duplicate_for}
                             link_duplicate={link_duplicate}
                         />
-
                     )}
                     {!loading && errorCode && (
                         <ServerErrorToast
-                            setShowToast={this.setShowToast}
                             errorCode={errorCode}
                             errorMessage={errorMessage}
                             setErrorCode={this.setErrorCode}
                             setErrorMessage={this.setErrorMessage}
                         />
-
                     )}
                 </div>
             </div>

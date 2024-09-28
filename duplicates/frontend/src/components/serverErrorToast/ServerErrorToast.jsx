@@ -1,7 +1,7 @@
 // ResponseInfo.js
 import React, {useEffect} from 'react';
 
-const ServerErrorToast = ({setShowToast, errorCode, errorMessage, setErrorCode, setErrorMessage}) => {
+const ServerErrorToast = ({errorCode, errorMessage, setErrorCode, setErrorMessage}) => {
     const onClose = () => {
         // setShowToast(false);
         setErrorCode(null);
