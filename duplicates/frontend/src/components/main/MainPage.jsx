@@ -4,7 +4,8 @@ import VideoPlayer from "../videoPlayer/VideoPlayer";
 import ResponseInfo from "../responseInfo/ResponseInfo";
 import ServerErrorToast from "../serverErrorToast/ServerErrorToast";
 
-const REACT_APP_BACKEND = 'backend:8000/';
+const REACT_APP_BACKEND = "http://localhost/api";
+
 
 class MainPage extends React.Component {
     constructor(props) {
@@ -53,13 +54,14 @@ class MainPage extends React.Component {
         this.setState({ errorMessage: value });
     }
 
-    // Новая функция для отправки локального файла на сервер
+    // Новая функция для отправки локального файла на сервер с добавлением confidenceLevel
     uploadFileToBackend = async (file) => {
         try {
             this.setState({ loading: true });
 
             const formData = new FormData();
             formData.append('file', file);
+            formData.append('confidenceLevel', this.state.confidenceLevel);
 
             const response = await fetch(`${REACT_APP_BACKEND}/file_upload`, {
                 method: 'POST',
@@ -85,17 +87,22 @@ class MainPage extends React.Component {
         }
     }
 
-    // Новая функция для отправки URL на сервер
+    // Новая функция для отправки URL на сервер с добавлением confidenceLevel
     uploadUrlToBackend = async (videoUrl) => {
         try {
             this.setState({ loading: true });
 
-            const response = await fetch(`${REACT_APP_BACKEND}/link_upload`, {
+            const payload = {
+                "link": videoUrl,
+                "confidence_level": this.state.confidenceLevel
+            };
+
+            const response = await fetch(`${REACT_APP_BACKEND}/check-video-duplicate-front`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ videoUrl }),
+                body: JSON.stringify(payload),
             });
 
             if (!response.ok) {
@@ -120,18 +127,18 @@ class MainPage extends React.Component {
         this.setResponse({});
         const fileUrl = URL.createObjectURL(file);
         this.setState({ originalVideoUrl: fileUrl, uploadedFile: file });
-        // await this.uploadFileToBackend(file);
+        await this.uploadFileToBackend(file);
         // Если нужно использовать моковую функцию вместо настоящей, раскомментируйте следующую строку:
-        await this.mockUploadFileToBackend(file);
+        // await this.mockUploadFileToBackend(file);
     }
 
     sendFileFromWeb = async (videoUrl) => {
         this.setResponse({});
         console.log("Загруженный URL видео: ", videoUrl);
         this.setState({ originalVideoUrl: videoUrl });
-        // await this.uploadUrlToBackend(videoUrl);
+        await this.uploadUrlToBackend(videoUrl);
         // Если нужно использовать моковую функцию вместо настоящей, раскомментируйте следующую строку:
-        await this.mockUploadUrlToBackend(videoUrl);
+        // await this.mockUploadUrlToBackend(videoUrl);
     }
 
     handleValidVideoUrl = (url) => {
@@ -154,10 +161,12 @@ class MainPage extends React.Component {
             // Симуляция успешного ответа
             const mockResponse = {
                 is_duplicate: Math.random() < 0.5,      // Случайное определение, является ли видео дубликатом
+                duplicate_for: "1234567890abcdef",      // Идентификатор дубликата
                 link_duplicate: "https://s3.ritm.media/yappy-db-duplicates/4182b2d2-4264-41dd-b101-4c1c66f4bdab.mp4"
             };
 
             if (!mockResponse.is_duplicate) {
+                mockResponse.duplicate_for = null;
                 mockResponse.link_duplicate = null;
             }
 
@@ -185,10 +194,12 @@ class MainPage extends React.Component {
             // Симуляция успешного ответа
             const mockResponse = {
                 is_duplicate: Math.random() < 0.5,      // Случайное определение, является ли видео дубликатом
+                duplicate_for: "1234567890abcdef",      // Идентификатор дубликата
                 link_duplicate: "https://s3.ritm.media/yappy-db-duplicates/4182b2d2-4264-41dd-b101-4c1c66f4bdab.mp4"
             };
 
             if (!mockResponse.is_duplicate) {
+                mockResponse.duplicate_for = null;
                 mockResponse.link_duplicate = null;
             }
 
@@ -207,7 +218,7 @@ class MainPage extends React.Component {
 
     render() {
         const { loading, originalVideoUrl, responseData, showToast, errorCode, errorMessage, confidenceLevel } = this.state;
-        const { is_duplicate, link_duplicate } = responseData;
+        const { is_duplicate, duplicate_for, link_duplicate } = responseData;
 
         return (
             <div className="main-page">
@@ -266,6 +277,7 @@ class MainPage extends React.Component {
                             showToast={showToast}
                             setShowToast={this.setShowToast}
                             is_duplicate={is_duplicate}
+                            duplicate_for={duplicate_for}
                             link_duplicate={link_duplicate}
                         />
                     )}
