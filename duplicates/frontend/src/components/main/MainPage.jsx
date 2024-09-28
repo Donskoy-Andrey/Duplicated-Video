@@ -1,7 +1,8 @@
 import React from 'react';
 import FileUploader from "../file_uploader/FileUploader";
 import VideoPlayer from "../videoPlayer/VideoPlayer";
-import ResponseInfo from "../responseInfo/ResponseInfo"; // Импортируем новый компонент
+import ResponseInfo from "../responseInfo/ResponseInfo";
+import ServerErrorToast from "../serverErrorToast/ServerErrorToast"; // Импортируем новый компонент
 
 class MainPage extends React.Component {
     constructor(props) {
@@ -14,6 +15,8 @@ class MainPage extends React.Component {
             responseData: {},       // Данные ответа сервера
             currentDocType: '',     // Текущий тип документа (если требуется)
             files: [],              // Массив файлов
+            errorCode: null,        // Код ошибки сервера
+            errorMessage: null      // Сообщение ошибки сервера
         };
     }
 
@@ -21,48 +24,41 @@ class MainPage extends React.Component {
         // Дополнительные действия после монтирования компонента (если необходимо)
     }
 
-    // Устанавливаем файлы в состояние
     setFiles = (files) => {
         this.setState({ files: files });
         console.log("Загруженные файлы: ", this.state.files);
     }
 
-    // Устанавливаем данные ответа сервера в состояние
     setResponse = (data) => {
         this.setState({ responseData: data });
     }
 
-    // Управляем отображением уведомления
     setShowToast = (value) => {
         this.setState({ showToast: value });
     }
 
-    // Функция для обработки загрузки локального файла
+    setErrorCode = (value) => {
+        this.setState({ errorCode: value });
+    }
+
+    setErrorMessage = (value) => {
+        this.setState({ errorMessage: value });
+    }
+
     sendLocalFile = async (file) => {
         this.setResponse({});
-
-        // Создаем локальный URL для отображения загруженного видео
         const fileUrl = URL.createObjectURL(file);
         this.setState({ originalVideoUrl: fileUrl, uploadedFile: file });
-
-        // Вызываем функцию для имитации ответа сервера
-        await this.mockServerResponse();
+        await this.uploadFileToBackend(file);
     }
 
-    // Функция для обработки отправки видео по URL
     sendFileFromWeb = async (videoUrl) => {
         this.setResponse({});
-
         console.log("Загруженный URL видео: ", videoUrl);
-
-        // Устанавливаем оригинальный URL видео для отображения
         this.setState({ originalVideoUrl: videoUrl });
-
-        // Вызываем функцию для имитации ответа сервера
-        await this.mockServerResponse();
+        await this.uploadUrlToBackend(videoUrl);
     }
 
-    // Обрабатываем валидный URL видео
     handleValidVideoUrl = (url) => {
         console.log('validVideoUrl', url);
         this.setState({ originalVideoUrl: url });
@@ -72,49 +68,76 @@ class MainPage extends React.Component {
         this.setState({ originalVideoUrl: null });
     };
 
-    // Функция для имитации ответа сервера
-    mockServerResponse = async () => {
+    // Загрузка файла на бэкенд
+    uploadFileToBackend = async (file) => {
+        try {
+            this.setState({ loading: true });
+            const formData = new FormData();
+            formData.append('file', file);
+
+            const response = await fetch(`${process.env.REACT_APP_BACKEND}/test_file`, {
+                method: 'POST',
+                body: formData
+            });
+
+            if (!response.ok) {
+                throw new Error(`Ошибка ${response.status}: ${response.statusText}`);
+            }
+
+            const responseData = await response.json();
+            this.setResponse(responseData);
+            // this.setShowToast(true);
+
+        } catch (error) {
+            this.setState({
+                errorCode: error.message,
+                errorMessage: "Произошла ошибка при отправке файла"
+            });
+            // this.setShowToast(true);
+        } finally {
+            this.setState({ loading: false });
+        }
+    }
+
+    // Отправка URL на бэкенд
+    uploadUrlToBackend = async (videoUrl) => {
         try {
             this.setState({ loading: true });
 
-            // Имитируем задержку, чтобы смоделировать время обработки сервера
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            const response = await fetch(`${process.env.REACT_APP_BACKEND}/test_url`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ url: videoUrl })
+            });
 
-            // Смоделированный ответ сервера
-            const mockResponse = {
-                is_duplicate: Math.random() < 0.5,      // Случайное определение, является ли видео дубликатом
-                duplicate_for: "1234567890abcdef",      // Идентификатор дубликата
-                link_duplicate: "https://s3.ritm.media/yappy-db-duplicates/4182b2d2-4264-41dd-b101-4c1c66f4bdab.mp4"
-            };
-
-            // Если видео не является дубликатом, очищаем соответствующие поля
-            if (!mockResponse.is_duplicate) {
-                mockResponse.duplicate_for = null;
-                mockResponse.link_duplicate = null;
+            if (!response.ok) {
+                throw new Error(`Ошибка ${response.status}: ${response.statusText}`);
             }
 
-            // Устанавливаем данные ответа сервера
-            this.setResponse(mockResponse);
+            const responseData = await response.json();
+            this.setResponse(responseData);
             this.setShowToast(true);
 
-
         } catch (error) {
-            alert('Сервер недоступен');
+            this.setState({
+                errorCode: error.message,
+                errorMessage: "Произошла ошибка при отправке URL"
+            });
+            // this.setShowToast(true);
         } finally {
             this.setState({ loading: false });
         }
     }
 
     render() {
-        const { loading, originalVideoUrl, responseData, showToast } = this.state;
-
-        // Деструктурируем данные ответа для удобства
+        const { loading, originalVideoUrl, responseData, showToast, errorCode, errorMessage } = this.state;
         const { is_duplicate, duplicate_for, link_duplicate } = responseData;
 
         return (
             <div className="main-page">
                 <div className="container mt-4 main-bg">
-                    {/* Скрытый SVG для иконки уведомления */}
                     <svg xmlns="http://www.w3.org/2000/svg" className="d-none">
                         <symbol id="exclamation-triangle-fill" viewBox="0 0 16 16">
                             <path
@@ -122,11 +145,8 @@ class MainPage extends React.Component {
                         </symbol>
                     </svg>
 
-                    <div className="main-header">
-                        {/* Здесь можно добавить заголовок при необходимости */}
-                    </div>
+                    <div className="main-header"></div>
 
-                    {/* Компонент загрузчика файлов */}
                     <FileUploader
                         sendLocalFile={this.sendLocalFile}
                         sendFileFromWeb={this.sendFileFromWeb}
@@ -140,7 +160,6 @@ class MainPage extends React.Component {
                     />
 
                     <div className="videos-container">
-                        {/* Плеер для оригинального видео */}
                         {originalVideoUrl && (
                             <div>
                                 <h3>Оригинальное видео:</h3>
@@ -148,12 +167,10 @@ class MainPage extends React.Component {
                             </div>
                         )}
 
-                        {/* Индикатор загрузки */}
                         {loading && (
                             <div className="big-center loader"></div>
                         )}
 
-                        {/* Плеер для видео из ответа сервера */}
                         {link_duplicate && (
                             <div>
                                 <h3>Видео из ответа сервера:</h3>
@@ -162,7 +179,7 @@ class MainPage extends React.Component {
                         )}
                     </div>
 
-                    {/* Компонент для отображения информации об ответе */}
+                    {/* Компонент для отображения информации об ответе или ошибке */}
                     {!loading && showToast && (
                         <ResponseInfo
                             showToast={showToast}
@@ -171,6 +188,17 @@ class MainPage extends React.Component {
                             duplicate_for={duplicate_for}
                             link_duplicate={link_duplicate}
                         />
+
+                    )}
+                    {!loading && errorCode && (
+                        <ServerErrorToast
+                            setShowToast={this.setShowToast}
+                            errorCode={errorCode}
+                            errorMessage={errorMessage}
+                            setErrorCode={this.setErrorCode}
+                            setErrorMessage={this.setErrorMessage}
+                        />
+
                     )}
                 </div>
             </div>
