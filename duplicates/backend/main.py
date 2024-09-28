@@ -51,7 +51,7 @@ async def check_duplicate(request: VideoLinkRequest):
     return await duplicate_checker.check_video_duplicate(request)
 
 
-@app.post("/front_check-video-duplicate",
+@app.post("/front-check-video-duplicate",
           response_model=VideoLinkResponseFront,
           responses={
               400: {"description": "Неверный запрос"},
