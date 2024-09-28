@@ -1,10 +1,10 @@
 import torch
 import asyncio
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, UploadFile, File
 
 from .api.base import videoLinkRequest, videoLinkResponse, videoRequestFront, videoLinkResponseFront
-from .api.utils import video_url_to_tensor, send_video_to_triton, search_in_faiss
-
+from .api.utils import video_url_to_tensor, send_video_to_triton, search_in_faiss, video_bytes_to_tensor, \
+    search_duplicate
 
 app = FastAPI(
     title="Video Duplicate Checker API",
@@ -21,29 +21,7 @@ app = FastAPI(
           tags=["API для проверки дубликатов видео на Фронтенд-Сервере"],
           summary="Проверка видео на дублирование")
 async def check_video_duplicate_front(video: videoRequestFront):
-    try:
-        video_tensor_short, video_tensor_long = await asyncio.to_thread(video_url_to_tensor, video.link)
-        query_embeddings = await asyncio.to_thread(send_video_to_triton, video_tensor_short, video_tensor_long)
-        query_embeddings = torch.tensor(query_embeddings)
-        potential_duplicate_uuid, has_duplicate = search_in_faiss(
-            query_embeddings=query_embeddings, minimum_confidence_level=video.confidence_level,
-        )[0]
-
-        if has_duplicate:
-            return videoLinkResponseFront(
-                is_duplicate=True,
-                link_duplicate=f"https://s3.ritm.media/yappy-db-duplicates/{potential_duplicate_uuid}.mp4",
-            )
-        return videoLinkResponseFront(
-            is_duplicate=False, link_duplicate="",
-        )
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail="Неверный запрос")
-    except RuntimeError as e:
-        raise HTTPException(status_code=500, detail="Ошибка сервера")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Ошибка сервера")
-
+    await search_duplicate(video.link)
 
 @app.post("/check-video-duplicate",
           response_model=videoLinkResponse,
@@ -54,25 +32,25 @@ async def check_video_duplicate_front(video: videoRequestFront):
           tags=["API для проверки дубликатов видео"],
           summary="Проверка видео на дублирование")
 async def check_video_duplicate(videoLink: videoLinkRequest):
-    try:
-        video_tensor_short, video_tensor_long = await asyncio.to_thread(video_url_to_tensor, videoLink.link)
-        query_embeddings = await asyncio.to_thread(send_video_to_triton, video_tensor_short, video_tensor_long)
-        query_embeddings = torch.tensor(query_embeddings)
-        potential_duplicate_uuid, has_duplicate = search_in_faiss(query_embeddings=query_embeddings)[0]
+    await search_duplicate(videoLink.link)
 
-        if has_duplicate:
-            return videoLinkResponse(
-                is_duplicate=True, duplicate_for=potential_duplicate_uuid,
-            )
-        return videoLinkResponse(
-            is_duplicate=False, duplicate_for="",
-        )
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail="Неверный запрос")
-    except RuntimeError as e:
-        raise HTTPException(status_code=500, detail="Ошибка сервера")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Ошибка сервера")
+@app.post(
+    "/upload-video",
+    response_model=videoLinkResponseFront,
+    tags=["API для загрузки видео"],
+    summary="Загрузка видеофайла",
+    responses={
+        400: {"description": "Неверный запрос"},
+        500: {"description": "Ошибка сервера"}
+    }
+)
+async def upload_video(videoFile: UploadFile = File(...)):
+    if videoFile.content_type != "video/mp4":
+        raise HTTPException(status_code=400, detail="Допускаются только файлы MP4.")
+
+    video_bytes = await videoFile.read()
+    await search_duplicate(video_bytes)
+
 
 
 @app.post("/test_request")

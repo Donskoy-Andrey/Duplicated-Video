@@ -1,3 +1,8 @@
+import asyncio
+import tempfile
+from http.client import HTTPException
+from typing import Union
+
 import cv2
 import tritonclient.grpc as grpcclient
 import numpy as np
@@ -18,6 +23,8 @@ from io import BytesIO
 from pytorchvideo.data.encoded_video import select_video_class
 import pandas as pd
 import faiss
+
+from duplicates.backend.api.base import videoLinkResponse
 
 
 class PackPathway(torch.nn.Module):
@@ -203,10 +210,10 @@ def send_video_to_triton(video_tensor_short, video_tensor_long, server_url="trit
 
 
 def search_in_faiss(
-    query_embeddings: torch.Tensor,
-    # query_datetimes: np.ndarray,
-    minimum_confidence_level: float = 0.97,
-    top_k: int = 3,
+        query_embeddings: torch.Tensor,
+        # query_datetimes: np.ndarray,
+        minimum_confidence_level: float = 0.97,
+        top_k: int = 3,
 ):
     assert query_embeddings.shape[1] == 400  # [batch, 400]
 
@@ -240,7 +247,7 @@ def search_in_faiss(
     # datetime_bool = query_datetimes < id_to_datetime[indices[:, 0]]
 
     output = tuple(zip(
-        id_to_uuid[indices[:, id_to_choose]],          # Closest neighbour: 0e6519b6-8d41-4d0f-8d3b-7c9ab1f5aab6
+        id_to_uuid[indices[:, id_to_choose]],  # Closest neighbour: 0e6519b6-8d41-4d0f-8d3b-7c9ab1f5aab6
         # y_score_bool * datetime_bool,     # Neighbour found or not
         y_score_bool,
     ))
@@ -250,3 +257,33 @@ def search_in_faiss(
      ('000be48d-c88c-4d48-8b7a-28430ac9b57d', True))
     """
     return output
+
+
+def video_bytes_to_tensor(bytes_data):
+    with tempfile.NamedTemporaryFile(delete=True, suffix=".mp4") as temp_video:
+        temp_video.write(bytes_data)
+        temp_video.flush()
+    return video_url_to_tensor(temp_video.name)
+
+
+async def search_duplicate(path_link: Union[str, bytes]):
+    try:
+        video_tensor_short, video_tensor_long = await asyncio.to_thread(video_url_to_tensor, path_link)
+        query_embeddings = await asyncio.to_thread(send_video_to_triton, video_tensor_short, video_tensor_long)
+        query_embeddings = torch.tensor(query_embeddings)
+        potential_duplicate_uuid, has_duplicate = search_in_faiss(query_embeddings=query_embeddings)[0]
+
+        if has_duplicate:
+            return videoLinkResponse(
+                is_duplicate=True, duplicate_for=potential_duplicate_uuid,
+            )
+        return videoLinkResponse(
+            is_duplicate=False, duplicate_for="",
+        )
+
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail="Неверный запрос")
+    except RuntimeError as e:
+        raise HTTPException(status_code=500, detail="Ошибка сервера")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Ошибка сервера")
