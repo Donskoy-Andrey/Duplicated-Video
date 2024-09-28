@@ -27,6 +27,9 @@ tests: test
 jupyter:
 	poetry run jupyter lab
 
+build:
+	docker compose up
+
 ## Clean cache files
 clean:
 	@echo "Cleaning cache files..."

@@ -15,3 +15,5 @@ RUN pip install poetry
 RUN poetry config virtualenvs.create false
 
 RUN poetry install
+
+RUN poetry add git+https://github.com/facebookresearch/pytorchvideo.git
