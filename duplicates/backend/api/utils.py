@@ -152,10 +152,14 @@ def video_url_to_tensor(url: str) -> list[torch.Tensor, torch.Tensor]:
         "audio": video._audio,
     }
     """
+
     cap = cv2.VideoCapture(url)
+    print(cap)
+    if not cap.isOpened():
+        raise ValueError(f"Не удалось открыть видео по URL: {url}")
 
     total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-
+    print(f'{total_frames=}')
     frames = []
     for i in range(total_frames):
         ret, frame = cap.read()
@@ -167,7 +171,7 @@ def video_url_to_tensor(url: str) -> list[torch.Tensor, torch.Tensor]:
         frames.append(frame_tensor)
 
     cap.release()
-
+    print(f"{len(frames)=}")
     frames = torch.stack(frames).permute(1, 0, 2, 3)
     transform = VideoTransform()
     video_tensor_short, video_tensor_long = transform({"video": frames})["video"]
@@ -276,7 +280,9 @@ def video_bytes_to_tensor(bytes_data):
 
 
 async def search_duplicate(path_link: Union[str, bytes]):
+        print(f"{len(path_link)=}")
         video_tensor_short, video_tensor_long = await asyncio.to_thread(video_url_to_tensor, path_link)
+        print('video_tensor_short',len(video_tensor_short))
         query_embeddings = await asyncio.to_thread(send_video_to_triton, video_tensor_short, video_tensor_long)
         query_embeddings = torch.tensor(query_embeddings)
         potential_duplicate_uuid, has_duplicate = search_in_faiss(query_embeddings=query_embeddings)[0]

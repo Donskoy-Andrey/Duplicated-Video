@@ -57,13 +57,15 @@ class MainPage extends React.Component {
     // Новая функция для отправки локального файла на сервер с добавлением confidenceLevel
     uploadFileToBackend = async (file) => {
         try {
+            this.setShowToast(false)
+            console.log("toast: ", this.state.showToast);
             this.setState({ loading: true });
 
             const formData = new FormData();
             formData.append('file', file);
             formData.append('confidenceLevel', this.state.confidenceLevel);
 
-            const response = await fetch(`${REACT_APP_BACKEND}/file_upload`, {
+            const response = await fetch(`${REACT_APP_BACKEND}/check-video-file-duplicate-front`, {
                 method: 'POST',
                 body: formData,
             });
@@ -94,7 +96,7 @@ class MainPage extends React.Component {
 
             const payload = {
                 "link": videoUrl,
-                "confidence_level": this.state.confidenceLevel
+                "confidenceLevel": this.state.confidenceLevel
             };
 
             const response = await fetch(`${REACT_APP_BACKEND}/check-video-duplicate-front`, {
@@ -161,7 +163,6 @@ class MainPage extends React.Component {
             // Симуляция успешного ответа
             const mockResponse = {
                 is_duplicate: Math.random() < 0.5,      // Случайное определение, является ли видео дубликатом
-                duplicate_for: "1234567890abcdef",      // Идентификатор дубликата
                 link_duplicate: "https://s3.ritm.media/yappy-db-duplicates/4182b2d2-4264-41dd-b101-4c1c66f4bdab.mp4"
             };
 
@@ -218,7 +219,7 @@ class MainPage extends React.Component {
 
     render() {
         const { loading, originalVideoUrl, responseData, showToast, errorCode, errorMessage, confidenceLevel } = this.state;
-        const { is_duplicate, duplicate_for, link_duplicate } = responseData;
+        const { is_duplicate, link_duplicate } = responseData;
 
         return (
             <div className="main-page">
@@ -277,8 +278,6 @@ class MainPage extends React.Component {
                             showToast={showToast}
                             setShowToast={this.setShowToast}
                             is_duplicate={is_duplicate}
-                            duplicate_for={duplicate_for}
-                            link_duplicate={link_duplicate}
                         />
                     )}
                     {!loading && errorCode && (

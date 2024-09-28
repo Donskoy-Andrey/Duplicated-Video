@@ -1,10 +1,12 @@
 import torch
 import asyncio
-from fastapi import FastAPI, HTTPException, UploadFile, File
+import tempfile
+from fastapi import FastAPI, HTTPException, UploadFile, File, Form
 
 from .api.base import videoLinkRequest, videoLinkResponse, videoRequestFront, videoLinkResponseFront
 from .api.utils import video_url_to_tensor, send_video_to_triton, search_in_faiss, video_bytes_to_tensor, \
     search_duplicate
+
 
 app = FastAPI(
     title="Video Duplicate Checker API",
@@ -84,17 +86,28 @@ async def check_video_duplicate(videoLink: videoLinkRequest):
         500: {"description": "Ошибка сервера"}
     }
 )
-async def upload_video(videoFile: UploadFile = File(...)):
-    if videoFile.content_type != "video/mp4":
+async def upload_video(file: UploadFile = File(...), confidenceLevel: float=Form(...)):
+    print(file.content_type)  # Отладочное сообщение
+    if file.content_type != "video/mp4":
         raise HTTPException(status_code=400, detail="Допускаются только файлы MP4.")
 
 
     try:
-        video_bytes = await videoFile.read()
-        has_duplicate,potential_duplicate_uuid = await search_duplicate(video_bytes)
+        video_bytes = await file.read()
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".mp4") as temp_video:
+            print('ssssssssssss')
+            temp_video.write(video_bytes)
+            print('aaaaaa')
+            temp_video.flush()
+            temp_video.close()
+            print(temp_video)
+        print("2", "*"*100)
+
+        has_duplicate,potential_duplicate_uuid = await search_duplicate(temp_video.name)
+        print("3", "*"*100)
         print(has_duplicate,potential_duplicate_uuid)
         if has_duplicate:
-            print('2*'*100)
+            print('4', '*'*100)
             return videoLinkResponseFront(
                 is_duplicate=True, link_duplicate=f"https://s3.ritm.media/yappy-db-duplicates/{potential_duplicate_uuid}.mp4",
             )
