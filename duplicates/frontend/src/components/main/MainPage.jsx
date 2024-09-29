@@ -96,7 +96,7 @@ class MainPage extends React.Component {
 
             const payload = {
                 "link": videoUrl,
-                "confidenceLevel": this.state.confidenceLevel
+                "confidence_level": this.state.confidenceLevel
             };
 
             const response = await fetch(`${REACT_APP_BACKEND}/check-video-duplicate-front`, {
