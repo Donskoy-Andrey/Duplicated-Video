@@ -13,8 +13,11 @@ from consumer.handlers.utils.utils import send_video_to_triton, search_in_faiss,
 async def search_duplicate(message: dict) -> None:
     path_link = message['body']['data']['link']
     conf_level = message['body']['data']['confidence_level']
-    video_tensor_short, video_tensor_long = await asyncio.to_thread(video_url_to_tensor, path_link)
-    query_embeddings = await asyncio.to_thread(send_video_to_triton, video_tensor_short, video_tensor_long)
+    # video_tensor_short, video_tensor_long = await asyncio.to_thread(video_url_to_tensor, path_link)
+    # query_embeddings = await asyncio.to_thread(send_video_to_triton, video_tensor_short, video_tensor_long)
+
+    video_tensor = await asyncio.to_thread(video_url_to_tensor, path_link)
+    query_embeddings = await asyncio.to_thread(send_video_to_triton, video_tensor)
     query_embeddings = torch.tensor(query_embeddings)
     potential_duplicate_uuid, has_duplicate = search_in_faiss(query_embeddings=query_embeddings,
                                                               minimum_confidence_level=conf_level)[0]
