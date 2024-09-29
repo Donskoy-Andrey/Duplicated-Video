@@ -17,7 +17,7 @@ from web.logger import LOGGING_CONFIG, logger
 from web.metrics import http_prometheus_middleware
 from web.storage.rabbit import setup_queue_and_exchange
 from web.storage.db import init_db
-
+from web.api.v2.router import router as v2_router
 
 def setup_middleware(app: FastAPI) -> None:
 
@@ -39,6 +39,7 @@ def setup_middleware(app: FastAPI) -> None:
 
 def setup_routers(app: FastAPI) -> None:
     app.include_router(v1_router, prefix='/api/v1') # затестить
+    app.include_router(v2_router, prefix='/api/v2')
     app.include_router(tech_router, prefix='/api/tech')
 
 

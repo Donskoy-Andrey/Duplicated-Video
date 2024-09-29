@@ -4,6 +4,7 @@ from typing import Any
 from uuid import uuid4
 import tempfile
 import msgpack
+import sqlalchemy
 from fastapi import Depends, UploadFile, File, Form, HTTPException
 from pydantic import BaseModel
 from sqlalchemy import select, text
@@ -59,7 +60,7 @@ async def upload_link(video: videoRequestFront, session: AsyncSession = Depends(
              },
              tags=["API для проверки дубликатов видео на Фронтенд-Сервере"],
              summary="Проверка видео на дублирование")
-async def upload_file(file: UploadFile = File(...), confidenceLevel: float = Form(...), session: AsyncSession = Depends(get_db),):
+async def upload_file(file: UploadFile = File(...), confidenceLevel: float = Form(default=0.95), session: AsyncSession = Depends(get_db),):
     if file.content_type != "video/mp4":
         raise HTTPException(status_code=400, detail="Допускаются только файлы MP4.")
 
@@ -98,7 +99,11 @@ async def get_result(body: ResultRequest, session: AsyncSession = Depends(get_db
     uid = body.uid
 
     job = await session.scalars(select(Jobs).filter_by(uid=uid))
-    row = job.one()
+    try:
+        row = job.one()
+    except sqlalchemy.exc.NoResultFound:
+        raise HTTPException(status_code=400, detail="Wrong uid")
+
     session.refresh(row)
 
     if row.is_processed:
