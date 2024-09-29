@@ -31,11 +31,11 @@ app = FastAPI(
           summary="Проверка видео на дублирование")
 async def check_video_duplicate_front(video: videoRequestFront):
     try:
-        video_tensor_short, video_tensor_long = await asyncio.to_thread(
+        video_tensor = await asyncio.to_thread(
             video_url_to_tensor, video.link
         )
         query_embeddings = await asyncio.to_thread(
-            send_video_to_triton, video_tensor_short, video_tensor_long
+            send_video_to_triton, video_tensor
         )
         query_embeddings = torch.tensor(query_embeddings)
         potential_duplicate_uuid, has_duplicate = search_in_faiss(
@@ -68,11 +68,11 @@ async def check_video_duplicate_front(video: videoRequestFront):
           summary="Проверка видео на дублирование")
 async def check_video_duplicate(videoLink: videoLinkRequest):
     try:
-        video_tensor_short, video_tensor_long = await asyncio.to_thread(
+        video_tensor = await asyncio.to_thread(
             video_url_to_tensor, videoLink.link
         )
         query_embeddings = await asyncio.to_thread(
-            send_video_to_triton, video_tensor_short, video_tensor_long
+            send_video_to_triton, video_tensor
         )
         query_embeddings = torch.tensor(query_embeddings)
         potential_duplicate_uuid, has_duplicate = search_in_faiss(
@@ -88,10 +88,10 @@ async def check_video_duplicate(videoLink: videoLinkRequest):
         )
     except ValueError:
         raise HTTPException(status_code=400, detail="Неверный запрос")
-    except RuntimeError:
-        raise HTTPException(status_code=500, detail="Ошибка сервера")
-    except Exception:
-        raise HTTPException(status_code=500, detail="Ошибка сервера")
+    except RuntimeError as e:
+        raise HTTPException(status_code=500, detail=f"Ошибка сервера, {e}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Ошибка сервера, {e}")
 
 
 @app.post("/test_request")
@@ -106,11 +106,11 @@ async def test_request():
     # Original
     url = 'https://s3.ritm.media/yappy-db-duplicates/55635719-38d9-4adb-b455-4c852ed869e9.mp4'
 
-    video_tensor_short, video_tensor_long = await asyncio.to_thread(
+    video_tensor = await asyncio.to_thread(
         video_url_to_tensor, url
     )
     query_embeddings = await asyncio.to_thread(
-        send_video_to_triton, video_tensor_short, video_tensor_long
+        send_video_to_triton, video_tensor
     )
     query_embeddings = torch.tensor(query_embeddings)
     output = search_in_faiss(query_embeddings=query_embeddings)

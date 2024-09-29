@@ -6,12 +6,7 @@ input [
   {
     name: "input__0"
     data_type: TYPE_FP32
-    dims: [ 3, 8, 256, 256 ]
-  },
-  {
-    name: "input__1"
-    data_type: TYPE_FP32
-    dims: [ 3, 32, 256, 256 ]
+    dims: [ 3, 16, 224, 224 ]
   }
 ]
 
@@ -33,3 +28,4 @@ instance_group [
     kind: KIND_CPU
   }
 ]
+
