@@ -371,3 +371,6 @@ sketch
 .idea/**/azureSettings.xml
 
 # End of https://www.toptal.com/developers/gitignore/api/react,python,jupyternotebooks,pycharm+all,webstorm
+/data/embeddings.pt
+/data/train_full.csv
+/data/embeddings_uuid.csv
