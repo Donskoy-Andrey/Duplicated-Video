@@ -16,6 +16,15 @@
 
 ## Быстрый старт
 
+### 0. Подготовка среды:
+#### Архив с дополнительными файлами: 
+```
+https://drive.google.com/drive/folders/1p7np_TsrfaDXSYIp7a-eJwMKar-ZMiKM?usp=drive_link
+```
+
+Из архива необходимо переместить модель `model.pt` по пути `./duplicates/triton/models/video-embedder/1/model.pt`. 
+Это необходимо для корректной инициализациии `Triton`-сервера.
+
 ### 1. Сборка проекта через Docker-Compose:
 ```bash
 docker compose up --build
