@@ -80,7 +80,7 @@ class VideoTransform(torch.nn.Module):
         return self.transform(frames)
 
 
-def video_url_to_tensor(url: str) -> list[torch.Tensor, torch.Tensor]:
+def video_url_to_tensor(url: str) -> torch.Tensor:
     """
     SOME TRASH
     DO NOT DELETE
@@ -181,26 +181,18 @@ def video_url_to_tensor(url: str) -> list[torch.Tensor, torch.Tensor]:
     return video_tensor
 
 
-def send_video_to_triton(video_tensor_short, video_tensor_long, server_url="triton:8004"):
+def send_video_to_triton(video_tensor, server_url="triton:8004"):
     triton_client = grpcclient.InferenceServerClient(url=server_url)
 
-    if video_tensor_long.dim() != 5:
-        video_tensor_long = video_tensor_long.unsqueeze(0)
-    video_tensor_long_np = video_tensor_long.cpu().numpy().astype(np.float32)
+    if video_tensor.dim() != 5:
+        video_tensor = video_tensor.unsqueeze(0)
+    video_tensor_np = video_tensor.cpu().numpy().astype(np.float32)
 
-    if video_tensor_short.dim() != 5:
-        video_tensor_short = video_tensor_short.unsqueeze(0)
-    video_tensor_short_np = video_tensor_short.cpu().numpy().astype(np.float32)
-
-    input_tensor_short = grpcclient.InferInput('input__0', video_tensor_short.shape, "FP32")
-    input_tensor_short.set_data_from_numpy(video_tensor_short_np)
-
-    input_tensor_long = grpcclient.InferInput('input__1', video_tensor_long.shape, "FP32")
-    input_tensor_long.set_data_from_numpy(video_tensor_long_np)
+    input_tensor = grpcclient.InferInput('input__0', video_tensor.shape, "FP32")
+    input_tensor.set_data_from_numpy(video_tensor_np)
 
     inputs = [
-        input_tensor_short,
-        input_tensor_long,
+        input_tensor
     ]
 
     outputs = [
