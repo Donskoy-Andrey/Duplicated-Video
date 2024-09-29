@@ -1,6 +1,7 @@
 import tempfile
 
 import cv2
+import torchvision
 import faiss
 import numpy as np
 import pandas as pd
@@ -9,7 +10,7 @@ import tritonclient.grpc as grpcclient
 from consumer.handlers.utils.video_transform import VideoTransform
 
 
-def video_url_to_tensor(url: str) -> list[torch.Tensor, torch.Tensor]:
+def video_url_to_tensor(url: str) -> torch.Tensor:
     cap = cv2.VideoCapture(url)
     total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
     frame_indices_long = np.linspace(0, total_frames - 1, 32, dtype=int)
@@ -30,31 +31,24 @@ def video_url_to_tensor(url: str) -> list[torch.Tensor, torch.Tensor]:
 
     frames = torch.stack(frames_long).permute(1, 0, 2, 3)
     transform = VideoTransform()
-    video_tensor_short, video_tensor_long = transform({"video": frames})["video"]
+    video_tensor = transform({"video": frames})["video"]
+    video_tensor = video_tensor.permute(1, 0, 2, 3)
+    video_tensor = torchvision.models.video.MViT_V1_B_Weights.KINETICS400_V1.transforms()(video_tensor)
+    return video_tensor
 
-    return video_tensor_short, video_tensor_long
 
-
-def send_video_to_triton(video_tensor_short, video_tensor_long, server_url="triton:8004"):
+def send_video_to_triton(video_tensor, server_url="triton:8004"):
     triton_client = grpcclient.InferenceServerClient(url=server_url)
 
-    if video_tensor_long.dim() != 5:
-        video_tensor_long = video_tensor_long.unsqueeze(0)
-    video_tensor_long_np = video_tensor_long.cpu().numpy().astype(np.float32)
+    if video_tensor.dim() != 5:
+        video_tensor = video_tensor.unsqueeze(0)
+    video_tensor_np = video_tensor.cpu().numpy().astype(np.float32)
 
-    if video_tensor_short.dim() != 5:
-        video_tensor_short = video_tensor_short.unsqueeze(0)
-    video_tensor_short_np = video_tensor_short.cpu().numpy().astype(np.float32)
-
-    input_tensor_short = grpcclient.InferInput('input__0', video_tensor_short.shape, "FP32")
-    input_tensor_short.set_data_from_numpy(video_tensor_short_np)
-
-    input_tensor_long = grpcclient.InferInput('input__1', video_tensor_long.shape, "FP32")
-    input_tensor_long.set_data_from_numpy(video_tensor_long_np)
+    input_tensor = grpcclient.InferInput('input__0', video_tensor.shape, "FP32")
+    input_tensor.set_data_from_numpy(video_tensor_np)
 
     inputs = [
-        input_tensor_short,
-        input_tensor_long,
+        input_tensor
     ]
 
     outputs = [
@@ -73,10 +67,10 @@ def send_video_to_triton(video_tensor_short, video_tensor_long, server_url="trit
 
 
 def search_in_faiss(
-        query_embeddings: torch.Tensor,
-        # query_datetimes: np.ndarray,
-        minimum_confidence_level: float = 0.97,
-        top_k: int = 3,
+    query_embeddings: torch.Tensor,
+    # query_datetimes: np.ndarray,
+    minimum_confidence_level: float = 0.95,
+    top_k: int = 3,
 ):
     assert query_embeddings.shape[1] == 400  # [batch, 400]
 
