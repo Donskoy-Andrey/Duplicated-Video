@@ -1,24 +1,26 @@
 import contextlib
 from typing import Any
+from uuid import uuid4
 
 import msgpack
 from fastapi import Depends
 from pydantic import BaseModel
 from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
+from starlette.responses import JSONResponse
 from starlette_context import context
 from starlette_context.errors import ContextDoesNotExistError
 
 from .router import router
 from fastapi.responses import ORJSONResponse
-from web.storage.db import get_db
+from web.storage.db import get_db, async_session
 from web.logger import logger
 from web.storage.rabbit import channel_pool
 from aio_pika.abc import DeliveryMode, ExchangeType
 from aio_pika import Message, RobustChannel, Channel
 
 from web.config.settings import settings
-
+from web.storage.db import Jobs
 
 class tmp(BaseModel):
     a: int
@@ -26,32 +28,35 @@ class tmp(BaseModel):
     c: list[str]
 
 
-@router.post('/puk')
-async def first_post_handler(body: tmp, session: AsyncSession = Depends(get_db),):
-    # row = await session.execute(select(text('1')))
-    # result, = row.one()
-    #
-    # row1 = await session.scalars(select(text('1')))
-    # result1 = row1.one()
-    # logger.info('Testim %s; %s', result, result1)
-    #
-    # await publish_message({'test': 'test'})
+@router.post('/check-video-duplicate')
+async def main_handler(body: tmp, session: AsyncSession = Depends(get_db),):
+    current_id = str(uuid4())
+    db_job = Jobs(uid=current_id, is_processed=False)
+    session.add(db_job)
+    await session.commit()
 
-    return ORJSONResponse({'message': 'perduk!'}, status_code=200)
+    await publish_message({'uid': current_id, 'body': {'type': 'example', 'data': 123}})
+
+    return JSONResponse({'uid': current_id}, status_code=200)
 
 
-@router.get('/puk')
-async def first_handler(session: AsyncSession = Depends(get_db),):
-    row = await session.execute(select(text('1')))
-    result, = row.one()
+class tmp2(BaseModel):
+    uid: str
 
-    row1 = await session.scalars(select(text('1')))
-    result1 = row1.one()
-    logger.info('Testim %s; %s', result, result1)
 
-    await publish_message({'test': 'test'})
+@router.post('/get-result')
+async def get_result(body: tmp2, session: AsyncSession = Depends(get_db),):
+    uid = body.uid
 
-    return ORJSONResponse({'message': 'perduk!'}, status_code=200)
+    job = await session.scalars(select(Jobs).filter_by(uid=uid))
+    row = job.one()
+    session.refresh(row)
+
+    if row.is_processed:
+        res = {"is_processed": row.is_processed, "is_duplicate": row.is_duplicate, "duplicate_for": row.duplicate_for}
+        return JSONResponse(content=res, status_code=200)
+    else:
+        return JSONResponse(content={}, status_code=200)
 
 
 async def publish_message(body: dict[str, Any]) -> None:

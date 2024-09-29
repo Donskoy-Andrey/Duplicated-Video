@@ -1,11 +1,27 @@
 from uuid import uuid4
 
 from asyncpg import Connection
-from sqlalchemy import AsyncAdaptedQueuePool
+from sqlalchemy import AsyncAdaptedQueuePool, Boolean
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy import Column, Integer, String
+from sqlalchemy.orm import declarative_base
 from typing_extensions import AsyncGenerator
 
 from web.config.settings import settings
+
+
+Base = declarative_base()
+
+
+class Jobs(Base):
+    __tablename__ = 'jobs'
+
+    uid = Column(String, primary_key=True)
+
+    is_processed = Column(Boolean)
+
+    is_duplicate = Column(Boolean)
+    duplicate_for = Column(String)
 
 
 class CConnection(Connection):
@@ -37,6 +53,12 @@ def create_session(_engine: AsyncEngine) -> async_sessionmaker[AsyncSession]:
 
 engine = create_engine()
 async_session = create_session(engine)
+
+
+async def init_db():
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
+        await conn.run_sync(Base.metadata.create_all)
 
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:

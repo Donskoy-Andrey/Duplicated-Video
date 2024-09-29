@@ -19,4 +19,4 @@ class ConsoleFormatter(logging.Formatter):
         return super().format(record)
 
 
-logger = logging.getLogger('timofey')
+logger = logging.getLogger('backend')

@@ -9,6 +9,10 @@ from consumer.handlers.handler import handle_message
 from consumer.logger import context_correlation_id, LOGGING_CONFIG, logger
 from consumer.storage.rabbit import channel_pool
 
+CALLBACK_MAPPING = {
+    "example": handle_message
+}
+
 
 def setup_logger() -> None:
     logging.config.dictConfig(LOGGING_CONFIG)
@@ -38,4 +42,6 @@ async def start_consumer():
                     parsed_message = msgpack.unpackb(message.body)
                     logger.info('Parsed message: %s', parsed_message)
 
-                    _ = asyncio.create_task(handle_message(parsed_message))
+                    callback = CALLBACK_MAPPING[parsed_message['body']['type']]
+
+                    _ = asyncio.create_task(callback(parsed_message))

@@ -1,3 +1,4 @@
+import asyncio
 import logging.config
 from contextlib import asynccontextmanager
 from functools import partial
@@ -15,6 +16,7 @@ from web.config.settings import settings
 from web.logger import LOGGING_CONFIG, logger
 from web.metrics import http_prometheus_middleware
 from web.storage.rabbit import setup_queue_and_exchange
+from web.storage.db import init_db
 
 
 def setup_middleware(app: FastAPI) -> None:
@@ -56,6 +58,9 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
     logger.info('Setup exchange and queue...')
     await setup_queue_and_exchange()
+
+    logger.info('Setup database...')
+    await init_db()
 
     logger.info('Start successfully')
     yield
