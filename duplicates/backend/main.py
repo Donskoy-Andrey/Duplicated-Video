@@ -44,9 +44,6 @@ async def check_video_duplicate_front(video: videoRequestFront):
         raise HTTPException(status_code=500, detail="Ошибка сервера")
 
 
-
-
-
 @app.post("/check-video-duplicate",
           response_model=videoLinkResponse,
           responses={
@@ -88,7 +85,7 @@ async def check_video_duplicate(videoLink: videoLinkRequest):
         500: {"description": "Ошибка сервера"}
     }
 )
-async def upload_video(file: UploadFile = File(...), confidenceLevel: float=Form(...)):
+async def upload_video(file: UploadFile = File(...), confidence_level: float=Form(...)):
     print(file.content_type)  # Отладочное сообщение
     if file.content_type != "video/mp4":
         raise HTTPException(status_code=400, detail="Допускаются только файлы MP4.")
