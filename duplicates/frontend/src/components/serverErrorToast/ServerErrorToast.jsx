@@ -1,9 +1,11 @@
 // ResponseInfo.js
 import React, {useEffect} from 'react';
 
-const ResponseInfo = ({showToast, setShowToast, is_duplicate}) => {
+const ServerErrorToast = ({errorCode, errorMessage, setErrorCode, setErrorMessage}) => {
     const onClose = () => {
-        setShowToast(false);
+        // setShowToast(false);
+        setErrorCode(null);
+        setErrorMessage(null);
     };
 
     useEffect(() => {
@@ -15,23 +17,18 @@ const ResponseInfo = ({showToast, setShowToast, is_duplicate}) => {
 
     return (
         <div
-            className={`custom-toast ${is_duplicate ? 'toast-error' : 'toast-success'}`}
+            className={`custom-toast toast-error`}
             onClick={onClose}
         >
             <button className="toast-close-button" onClick={onClose} aria-label="Закрыть">
                 &times;
             </button>
-            {is_duplicate ? (
                 <div>
-                    <h4 className="toast-header">Дубликат найден</h4>
+                    <h4 className="toast-header">Ошибка обработки</h4>
+                    <p>{errorCode}: {errorMessage}</p>
                 </div>
-            ) : (
-                <div>
-                    <h4 className="toast-header">Дубликат не найден</h4>
-                </div>
-            )}
         </div>
     );
 };
 
-export default ResponseInfo;
+export default ServerErrorToast;

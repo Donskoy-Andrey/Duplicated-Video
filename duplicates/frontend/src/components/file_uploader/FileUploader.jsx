@@ -1,16 +1,31 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
 import Popover from 'react-bootstrap/Popover';
+import { ReportButton } from "../reportButton/ReportButton";
 
 const FileUploader = (props) => {
+    const {
+        onValidVideoUrl,
+        sendLocalFile,
+        sendFileFromWeb,
+        loading,
+        link_duplicate,
+        confidenceLevel,
+        setConfidenceLevel
+    } = props;
+
     const allowedFormats = ['mp4', 'wav'];
     const [selectedFile, setSelectedFile] = useState(null);
     const [videoUrl, setVideoUrl] = useState('');
     const [errorMessage, setErrorMessage] = useState('');
     const [isUrlValid, setIsUrlValid] = useState(false);
-    const [isFileValid, setIsFileValid] = useState(false); // New state for file validity
+    const [isFileValid, setIsFileValid] = useState(false);
     const [isCheckingUrl, setIsCheckingUrl] = useState(false);
     const fileInputRef = useRef(null);
+
+    useEffect(() => {
+        updateSliderBackground();
+    }, [confidenceLevel]);
 
     const handleFileChange = (e) => {
         const file = e.target.files[0];
@@ -18,9 +33,9 @@ const FileUploader = (props) => {
         setVideoUrl('');
         setErrorMessage('');
         setIsUrlValid(false);
-        validateFile(file); // Validate the selected file
-        if (props.onValidVideoUrl) {
-            props.onValidVideoUrl(null); // Clear video preview in MainPage
+        validateFile(file);
+        if (onValidVideoUrl) {
+            onValidVideoUrl(null);
         }
     };
 
@@ -33,8 +48,8 @@ const FileUploader = (props) => {
 
         if (url === '') {
             setIsUrlValid(false);
-            if (props.onValidVideoUrl) {
-                props.onValidVideoUrl(null);
+            if (onValidVideoUrl) {
+                onValidVideoUrl(null);
             }
             return;
         }
@@ -47,13 +62,13 @@ const FileUploader = (props) => {
 
         if (!isValid) {
             setIsUrlValid(false);
-            if (props.onValidVideoUrl) {
-                props.onValidVideoUrl(null);
+            if (onValidVideoUrl) {
+                onValidVideoUrl(null);
             }
         } else {
             setIsUrlValid(true);
-            if (props.onValidVideoUrl) {
-                props.onValidVideoUrl(url);
+            if (onValidVideoUrl) {
+                onValidVideoUrl(url);
             }
         }
     };
@@ -67,9 +82,11 @@ const FileUploader = (props) => {
         const extension = file.name.split('.').pop().toLowerCase();
         if (!allowedFormats.includes(extension)) {
             setIsFileValid(false);
+            setErrorMessage('Недопустимый формат файла. Допустимые форматы: mp4, wav.');
             return false;
         }
         setIsFileValid(true);
+        setErrorMessage('');
         return true;
     };
 
@@ -117,8 +134,6 @@ const FileUploader = (props) => {
         });
     };
 
-
-
     const handleDragOver = (e) => {
         e.preventDefault();
     };
@@ -130,17 +145,17 @@ const FileUploader = (props) => {
         setVideoUrl('');
         setErrorMessage('');
         setIsUrlValid(false);
-        validateFile(file); // Validate the dropped file
-        if (props.onValidVideoUrl) {
-            props.onValidVideoUrl(null); // Clear video preview in MainPage
+        validateFile(file);
+        if (onValidVideoUrl) {
+            onValidVideoUrl(null);
         }
     };
 
     const handleUpload = () => {
         if (selectedFile && isFileValid) {
-            props.sendLocalFile(selectedFile);
+            sendLocalFile(selectedFile);
         } else if (videoUrl && isUrlValid) {
-            props.sendFileFromWeb(videoUrl);
+            sendFileFromWeb(videoUrl);
         } else {
             setErrorMessage('Загрузите файл или введите корректную ссылку');
         }
@@ -170,6 +185,37 @@ const FileUploader = (props) => {
 
     const popoverContent = `Допустимые форматы: mp4, wav`;
 
+    // Handler for slider change
+    const handleSliderChange = (e) => {
+        const value = parseFloat(e.target.value);
+        setConfidenceLevel(value);
+    };
+
+    // Handler for input field change
+    const handleInputChange = (e) => {
+        let value = parseFloat(e.target.value);
+        if (isNaN(value)) {
+            value = '';
+        } else {
+            // Clamp the value between 0.8 and 0.99
+            value = Math.min(Math.max(value, 0.8), 0.99);
+        }
+        setConfidenceLevel(value);
+    };
+
+    // Функция для обновления фона слайдера
+    const updateSliderBackground = () => {
+        const slider = document.querySelector('.confidence-slider');
+        if (slider) {
+            const min = parseFloat(slider.min);
+            const max = parseFloat(slider.max);
+            const value = parseFloat(slider.value);
+            const percentage = ((value - min) / (max - min)) * 100;
+            // Устанавливаем градиентный фон: желтый до ползунка, #2c3034 после
+            slider.style.background = `linear-gradient(to right, #f4c142 0%, #f4c142 ${percentage}%, #2c3034 ${percentage}%, #2c3034 100%)`;
+        }
+    };
+
     return (
         <div>
             <div
@@ -180,7 +226,7 @@ const FileUploader = (props) => {
             >
                 <i className="fa-regular fa-file-lines fa-big"></i>
                 <h3>
-                    Перетащите видео файл сюда <br/>
+                    Перетащите видео файл сюда <br />
                     или <div className="text-warning">выберите его вручную</div>
                 </h3>
                 <div className="drag-drop-field__extensions">mp4, wav</div>
@@ -188,7 +234,7 @@ const FileUploader = (props) => {
                     type="file"
                     onInput={handleFileChange}
                     ref={fileInputRef}
-                    style={{display: 'none'}}
+                    style={{ display: 'none' }}
                 />
             </div>
 
@@ -198,24 +244,56 @@ const FileUploader = (props) => {
                     <span className="yappy">Yappy</span>
                 </h3>
                 <div className="link-input-field">
-                <input
-                    type="text"
-                    placeholder="Введите ссылку на видео"
-                    value={videoUrl}
-                    onChange={handleLinkChange}
-                />
+                    <input
+                        type="text"
+                        placeholder="Введите ссылку на видео"
+                        value={videoUrl}
+                        onChange={handleLinkChange}
+                    />
                     {isCheckingUrl && <span className="loader-text"></span>}
                 </div>
             </div>
 
-            <div className="input-control__buttons">
+            {/* Confidence Level Section */}
+            <div className="confidence-level-container" style={{ marginTop: '20px' }}>
+                <h3>
+                    Настройте уровень <span className="text-warning">уверенности</span> модели
+                </h3>
+                <div className="confidence-level-controls" style={{ display: 'flex', alignItems: 'center' }}>
+                    <input
+                        type="range"
+                        min="0.8"
+                        max="0.99"
+                        step="0.01"
+                        value={confidenceLevel}
+                        onChange={handleSliderChange}
+                        className="confidence-slider"
+                        aria-label="Уровень уверенности"
+                    />
+                    <input
+                        type="number"
+                        min="0.8"
+                        max="0.99"
+                        step="0.01"
+                        value={confidenceLevel}
+                        onChange={handleInputChange}
+                        className="confidence-number"
+                        aria-label="Уровень уверенности"
+                    />
+                </div>
+
+            </div>
+            {/* End of Confidence Level Section */}
+
+            <div className="input-control__buttons" style={{ marginTop: '20px' }}>
                 <button
                     className="btn btn-primary"
                     onClick={handleUpload}
-                    disabled={props.loading || (!isFileValid && !isUrlValid) || isCheckingUrl}
+                    disabled={loading || (!isFileValid && !isUrlValid) || isCheckingUrl}
                 >
                     Отправить
                 </button>
+                {link_duplicate && <ReportButton />}
             </div>
             {errorMessage && <p className="error-message">{errorMessage}</p>}
             <div className="uploaded-file__container">
@@ -227,12 +305,12 @@ const FileUploader = (props) => {
                     >
                         {checkFileFormat(selectedFile) ? (
                             <span className="uploaded-file__filename">
-                {selectedFile.name.length > 15
-                    ? `${selectedFile.name.substring(0, 5)}...${selectedFile.name.substring(
-                        selectedFile.name.length - 10
-                    )}`
-                    : selectedFile.name}
-              </span>
+                                {selectedFile.name.length > 15
+                                    ? `${selectedFile.name.substring(0, 5)}...${selectedFile.name.substring(
+                                        selectedFile.name.length - 10
+                                    )}`
+                                    : selectedFile.name}
+                            </span>
                         ) : (
                             <OverlayTrigger
                                 trigger={['hover', 'focus']}
@@ -247,7 +325,6 @@ const FileUploader = (props) => {
                         </button>
                     </div>
                 )}
-
             </div>
         </div>
     );
