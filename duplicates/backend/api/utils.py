@@ -2,7 +2,7 @@ import asyncio
 import tempfile
 from http.client import HTTPException
 from typing import Union
-
+import torchvision
 import cv2
 
 import numpy as np
@@ -55,24 +55,12 @@ class VideoTransform(torch.nn.Module):
     def __init__(
             self,
             side_size: int = 256,
-            mean: list = [0.45, 0.45, 0.45],
-            std: list = [0.225, 0.225, 0.225],
-            crop_size: int = 256,
-            num_frames: int = 32,
-            sampling_rate: int = 2,
-            frames_per_second: int = 30,
-            alpha: int = 4
+            num_frames: int = 16,
     ) -> None:
         super().__init__()
 
         self.side_size = side_size
-        self.mean = mean
-        self.std = std
-        self.crop_size = crop_size
         self.num_frames = num_frames
-        self.sampling_rate = sampling_rate
-        self.frames_per_second = frames_per_second
-        self.alpha = alpha
 
         # self.clip_duration = (self.num_frames * self.sampling_rate) / self.frames_per_second
 
@@ -81,20 +69,12 @@ class VideoTransform(torch.nn.Module):
             transform=Compose(
                 [
                     UniformTemporalSubsample(self.num_frames),
-                    Lambda(lambda x: x / 255.0),
-                    NormalizeVideo(self.mean, self.std),
-                    ShortSideScale(
-                        size=self.side_size
-                    ),
-                    CenterCropVideo(self.crop_size),
-                    PackPathway(self.alpha),
+                    # ShortSideScale(
+                    #    size=self.side_size
+                    # ),
                 ]
             )
         )
-
-    @property
-    def clip_duration(self) -> float:
-        return (self.num_frames * self.sampling_rate) / self.frames_per_second
 
     def forward(self, frames: torch.Tensor):
         return self.transform(frames)
@@ -143,6 +123,28 @@ def video_url_to_tensor(url: str) -> list[torch.Tensor, torch.Tensor]:
     }
     """
 
+    # cap = cv2.VideoCapture(url)
+    # total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    # frame_indices_long = np.linspace(0, total_frames - 1, 32, dtype=int)
+    #
+    # frames_long, frames_short = [], []
+    # for i in range(total_frames):
+    #     ret, frame = cap.read()
+    #     if not ret:
+    #         break
+    #
+    #     if i in frame_indices_long:
+    #         frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    #         # frame_resized = cv2.resize(frame_rgb, (256, 256), interpolation=cv2.INTER_AREA)
+    #         frame_tensor = torch.from_numpy(frame_rgb).permute(2, 0, 1)  # (H, W, C) -> (C, H, W)
+    #         frames_long.append(frame_tensor)
+    #
+    # cap.release()
+    #
+    # frames = torch.stack(frames_long).permute(1, 0, 2, 3)
+    # transform = VideoTransform()
+    # video_tensor_short, video_tensor_long = transform({"video": frames})["video"]
+
     cap = cv2.VideoCapture(url)
     total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
     frame_indices_long = np.linspace(0, total_frames - 1, 32, dtype=int)
@@ -162,8 +164,13 @@ def video_url_to_tensor(url: str) -> list[torch.Tensor, torch.Tensor]:
     cap.release()
 
     frames = torch.stack(frames_long).permute(1, 0, 2, 3)
+    print(frames.shape)
     transform = VideoTransform()
-    video_tensor_short, video_tensor_long = transform({"video": frames})["video"]
+    video_tensor = transform({"video": frames})["video"]
+    print(video_tensor.shape)
+    video_tensor = video_tensor.permute(1, 0, 2, 3)
+    print(video_tensor.shape)
+    video_tensor = torchvision.models.video.MViT_V1_B_Weights.KINETICS400_V1.transforms()(video_tensor)
 
     # if list(video_tensor_short.shape) != [3, 8, 256, 256]:
     #     video_tensor_short = torch.rand(3, 8, 256, 256)
@@ -171,7 +178,7 @@ def video_url_to_tensor(url: str) -> list[torch.Tensor, torch.Tensor]:
     # if list(video_tensor_long.shape) != [3, 32, 256, 256]:
     #     video_tensor_long = torch.rand(3, 8, 256, 256)
 
-    return video_tensor_short, video_tensor_long
+    return video_tensor
 
 
 def send_video_to_triton(video_tensor_short, video_tensor_long, server_url="triton:8004"):
@@ -270,9 +277,9 @@ def video_bytes_to_tensor(bytes_data):
 
 async def search_duplicate(path_link: Union[str, bytes]):
         print(f"{len(path_link)=}")
-        video_tensor_short, video_tensor_long = await asyncio.to_thread(video_url_to_tensor, path_link)
-        print('video_tensor_short',len(video_tensor_short))
-        query_embeddings = await asyncio.to_thread(send_video_to_triton, video_tensor_short, video_tensor_long)
+        video_tensor = await asyncio.to_thread(video_url_to_tensor, path_link)
+        print('video_tensor_short',len(video_tensor))
+        query_embeddings = await asyncio.to_thread(send_video_to_triton, video_tensor)
         query_embeddings = torch.tensor(query_embeddings)
         potential_duplicate_uuid, has_duplicate = search_in_faiss(query_embeddings=query_embeddings)[0]
         return has_duplicate, potential_duplicate_uuid

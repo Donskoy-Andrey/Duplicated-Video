@@ -137,8 +137,11 @@ async def test_request():
     # Original
     url = 'https://s3.ritm.media/yappy-db-duplicates/55635719-38d9-4adb-b455-4c852ed869e9.mp4'
 
-    video_tensor_short, video_tensor_long = await asyncio.to_thread(video_url_to_tensor, url)
-    query_embeddings = await asyncio.to_thread(send_video_to_triton, video_tensor_short, video_tensor_long)
+    # video_tensor_short, video_tensor_long = await asyncio.to_thread(video_url_to_tensor, url)
+    video_tensor = await asyncio.to_thread(
+        video_url_to_tensor, url
+    )
+    query_embeddings = await asyncio.to_thread(send_video_to_triton, video_tensor)
     query_embeddings = torch.tensor(query_embeddings)
     output = search_in_faiss(query_embeddings=query_embeddings)
 
