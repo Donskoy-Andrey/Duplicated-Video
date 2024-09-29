@@ -60,6 +60,7 @@ starlette-context = "0.3.6"
 typing-extensions = "4.12.2"
 yarl = "1.13.0"
 contextvars = "2.4"
+python-multipart = "^0.0.11"
 
 [build-system]
 requires = ["poetry-core"]

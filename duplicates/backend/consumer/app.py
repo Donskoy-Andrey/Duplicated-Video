@@ -4,13 +4,15 @@ import logging.config
 import msgpack
 
 from consumer.config.settings import settings
-from consumer.handlers.handler import handle_message
+from consumer.handlers.handler import search_duplicate
 
 from consumer.logger import context_correlation_id, LOGGING_CONFIG, logger
 from consumer.storage.rabbit import channel_pool
 
 CALLBACK_MAPPING = {
-    "example": handle_message
+    "front_link": search_duplicate,
+    "front_file": search_duplicate,
+
 }
 
 

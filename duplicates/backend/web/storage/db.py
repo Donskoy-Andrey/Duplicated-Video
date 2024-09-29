@@ -21,7 +21,7 @@ class Jobs(Base):
     is_processed = Column(Boolean)
 
     is_duplicate = Column(Boolean)
-    duplicate_for = Column(String)
+    duplicate_link = Column(String)
 
 
 class CConnection(Connection):
